@@ -27,6 +27,8 @@ interface PriceData {
 let recentSwaps: SwapTracker[] = [];
 
 export class HorizonHelper {
+    static isMainnet = process.env.NEXT_PUBLIC_STELLAR_NETWORK === "public";
+
     static getBaseUrl() {
         return process.env.NEXT_PUBLIC_STELLAR_URL!;
     }

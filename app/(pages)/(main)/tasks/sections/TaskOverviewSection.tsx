@@ -8,7 +8,7 @@ import { useInfiniteScroll, useToggle } from "ahooks";
 import SetTaskBountyModal from "../modals/SetTaskBountyModal";
 import SetTaskTimelineModal from "../modals/SetTaskTimelineModal";
 import DeleteTaskModal from "../modals/DeleteTaskModal";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 import { formatTimeline, moneyFormat, taskStatusFormatter } from "@/app/utils/helper";
 import { TaskDto } from "@/app/models/task.model";
@@ -25,6 +25,7 @@ const TaskOverviewSection = () => {
     const [openSetTaskBountyModal, { toggle: toggleSetTaskBountyModal }] = useToggle(false);
     const [openSetTaskTimelineModal, { toggle: toggleSetTaskTimelineModal }] = useToggle(false);
     const [openDeleteTaskModal, { toggle: toggleDeleteTaskModal }] = useToggle(false);
+    const listRef = useRef<HTMLDivElement>(null);
 
     const {
         data: activities,
@@ -52,6 +53,7 @@ const TaskOverviewSection = () => {
             };
         },
         {
+            target: listRef,
             isNoMore: (data) => !data?.pagination?.hasMore,
             reloadDeps: [activeTask?.id]
         }
@@ -182,7 +184,7 @@ const TaskOverviewSection = () => {
                         </button>
                     )}
                 </div>
-                <div className="pl-5 pb-5 mt-[30px] overflow-y-auto space-y-[15px]">
+                <div ref={listRef} className="pl-5 pb-5 mt-[30px] overflow-y-auto space-y-[15px]">
                     {activities?.list?.map((activity) => (
                         <TaskActivityCard
                             key={activity.id}

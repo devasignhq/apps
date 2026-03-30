@@ -75,9 +75,9 @@ const ApproveSubmissionModal = ({ taskActivity, toggleModal, onSuccess }: Approv
                     <p className="text-primary-400">Contributor:</p>
                     <div className="flex items-center gap-1">
                         <span className="text-light-100 underline truncate">
-                            @{taskActivity.taskSubmission?.user?.username}
+                            @{taskActivity.user?.username}
                         </span>
-                        <Link href={`https://github.com/${taskActivity.taskSubmission?.user?.username}`} target="_blank">
+                        <Link href={`https://github.com/${taskActivity.user?.username}`} target="_blank">
                             <FiArrowUpRight className="text-2xl text-primary-100 hover:text-light-100" />
                         </Link>
                     </div>

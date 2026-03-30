@@ -1,6 +1,6 @@
 "use client";
 import FilterDropdown from "@/app/components/Dropdown/Filter";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { HiPlus } from "react-icons/hi";
 import TaskCard from "../components/TaskCard";
 import CreateTaskModal from "../modals/CreateTaskModal";
@@ -21,6 +21,7 @@ import { socket, joinSocketRoom, leaveSocketRoom } from "@/lib/socket";
 
 // ? Restrict filtering when task list is <= 10
 const TaskListSection = () => {
+    const listRef = useRef<HTMLDivElement>(null);
     const { activeInstallation } = useInstallationStore();
     const { activeTask, refreshActiveTask } = useContext(ActiveTaskContext);
     const [openCreateTaskModal, { toggle: toggleCreateTaskModal }] = useToggle(false);
@@ -88,6 +89,7 @@ const TaskListSection = () => {
             };
         },
         {
+            target: listRef,
             isNoMore: (response) => !response?.hasMore,
             reloadDeps: [activeInstallation?.id, ...Object.values(taskFilters)]
         }
@@ -271,7 +273,7 @@ const TaskListSection = () => {
                         />
                     </div>
                 </div>
-                <div className="grow pr-5 pb-5 overflow-y-auto space-y-[15px]">
+                <div ref={listRef} className="grow pr-5 pb-5 overflow-y-auto space-y-[15px]">
                     {tasksData?.list?.map((task) => (
                         <TaskCard
                             key={task.id}

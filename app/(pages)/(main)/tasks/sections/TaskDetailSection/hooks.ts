@@ -33,12 +33,15 @@ export const useManageMessages = (taskId: string, contributorId: string) => {
     useEffect(() => {
         if (!taskId || !contributorId || !currentUser) return;
 
+        let isMounted = true;
         let unsubscribeFromTaskMessages: (() => void) | null = null;
         let unsubscribeFromExtensionReplies: (() => void) | null = null;
 
         const initializeMessages = async () => {
             try {
                 const initialMessages = await MessageAPI.getTaskMessages(taskId);
+                if (!isMounted) return;
+                
                 setMessages(initialMessages);
                 setLoading(false);
 
@@ -64,13 +67,14 @@ export const useManageMessages = (taskId: string, contributorId: string) => {
                 );
             } catch {
                 // console.error("Failed to load messages:", error);
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
 
         initializeMessages();
 
         return () => {
+            isMounted = false;
             if (unsubscribeFromTaskMessages) unsubscribeFromTaskMessages();
             if (unsubscribeFromExtensionReplies) unsubscribeFromExtensionReplies();
         };

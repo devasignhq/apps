@@ -169,6 +169,7 @@ const CreateTaskModal = ({
             };
         },
         {
+            target: taskBoxRef,
             isNoMore: (response) => !response?.hasMore,
             reloadDeps: [activeRepo, ...Object.values(issueFilters)]
         }
