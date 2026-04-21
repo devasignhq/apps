@@ -1,0 +1,121 @@
+"use client";
+import { getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
+import { ROUTES } from "@/app/utils/data";
+import { useAsyncEffect, useLockFn } from "ahooks";
+import { InstallationAPI } from "@/app/services/installation.service";
+import useInstallationStore from "@/app/state-management/useInstallationStore";
+import { toast } from "react-toastify";
+import { useState } from "react";
+import { TbProgress } from "react-icons/tb";
+import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
+import { MdOutlineCancel } from "react-icons/md";
+import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
+import { useCustomSearchParams } from "@devasign/shared/hooks";
+
+type ReboundAction = "INSTALL" | "RETRY" | "";
+
+const Installation = () => {
+    const router = useUnauthenticatedUserCheck();;
+    const { searchParams } = useCustomSearchParams();
+    const installationId = searchParams.get("installation_id");
+    const [isProcessing, setIsProcessing] = useState(true);
+    const [reboundAction, setReboundAction] = useState<ReboundAction>("");
+
+    const {
+        activeInstallation,
+        installationList,
+        setActiveInstallation,
+        setInstallationList
+    } = useInstallationStore();
+
+    const saveInstallation = async () => {
+        setIsProcessing(true);
+        const user = await getCurrentUser();
+
+        if (!installationId) {
+            toast.error("Installation ID is missing.");
+            setReboundAction("INSTALL");
+            setIsProcessing(false);
+            return;
+        }
+
+        if (!user) {
+            router.push(`${ROUTES.ACCOUNT}?installation_id=${installationId}`);
+            return;
+        }
+
+        // Check if installationId already exists in installationList
+        const existingInstallation = installationList.find((inst) => inst.id === installationId);
+        if (existingInstallation) {
+            setActiveInstallation(existingInstallation);
+            toast.info("Installation already exists.");
+            router.push(ROUTES.TASKS);
+            return;
+        }
+
+        try {
+            const response = await InstallationAPI.createInstallation({ installationId });
+            
+            const noCurrentInstallations = !activeInstallation && installationList.length === 0;
+
+            setReboundAction("");
+            setActiveInstallation(response.data);
+            setInstallationList([...installationList, response.data]);
+            handleApiSuccessResponse(response);
+
+            if (noCurrentInstallations) {
+                router.push(ROUTES.ONBOARDING);
+            } else {
+                router.push(ROUTES.TASKS);
+            }
+        } catch (error) {
+            handleApiErrorResponse(
+                error,
+                "Failed to save installation. Please reload page to try again."
+            );
+            setReboundAction("RETRY");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    useAsyncEffect(useLockFn(() => saveInstallation()), [router, installationId]);
+
+    return (isProcessing || reboundAction === "") ? (
+        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+            <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
+                <TbProgress className="text-[44px] text-primary-400 mx-auto rotate-loading-slower" />
+                <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Saving Installation</h2>
+                <p className="text-body-medium text-dark-100 mb-[30px] text-center">
+                    Please wait while we save your installation with GitHub.
+                </p>
+            </div>
+        </div>
+    ) : (
+        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+            <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
+                <MdOutlineCancel className="text-[44px] text-indicator-500 mx-auto" />
+                <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Process Failed</h2>
+                <p className="text-body-medium text-dark-100 mb-[30px] text-center">
+                    The process was not successful. Please try again.
+                </p>
+                <ButtonPrimary
+                    format="OUTLINE"
+                    text={reboundAction === "INSTALL" ? "Reinstall GitHub App" : "Refresh"}
+                    attributes={{
+                        onClick: () => {
+                            if (reboundAction === "INSTALL") {
+                                router.push(ROUTES.INSTALLATION.NEW);
+                            } else {
+                                saveInstallation();
+                            }
+                        }
+                    }}
+                    extendedClassName="w-fit mx-auto"
+                />
+            </div>
+        </div>
+    );
+};
+
+export default Installation;
