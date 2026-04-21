@@ -1,51 +1,20 @@
 {
-  "name": "app-pm",
-  "version": "0.1.0",
+  "name": "devasign-frontend",
   "private": true,
+  "packageManager": "npm@11.9.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "legacy": "npm i --legacy-peer-deps",
-    "type-check": "tsc --noEmit",
-    "type-check:watch": "tsc --noEmit --watch"
-  },
-  "dependencies": {
-    "@firebase/auth": "^1.10.0",
-    "@statsig/react-bindings": "^3.32.0",
-    "@statsig/session-replay": "^3.32.0",
-    "@statsig/web-analytics": "^3.32.0",
-    "@tailwindcss/postcss": "^4.1.4",
-    "ahooks": "^3.8.4",
-    "axios": "^1.8.4",
-    "firebase": "^11.6.0",
-    "formik": "^2.4.6",
-    "next": "^15.5.7",
-    "postcss": "^8.5.3",
-    "qrcode.react": "^4.2.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-icons": "^5.5.0",
-    "react-markdown": "^10.1.0",
-    "react-toastify": "^11.0.5",
-    "rehype-raw": "^7.0.0",
-    "rehype-sanitize": "^6.0.0",
-    "remark-gfm": "^4.0.1",
-    "socket.io-client": "^4.8.3",
-    "tailwind-merge": "^3.2.0",
-    "tailwindcss": "^4.1.4",
-    "yup": "^1.6.1",
-    "zustand": "^5.0.5"
+    "dev:contributor": "turbo run dev --filter=@devasign/app-contributor",
+    "dev:pm": "turbo run dev --filter=@devasign/app-pm",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.1",
-    "typescript": "^5"
+    "turbo": "^2"
   }
 }

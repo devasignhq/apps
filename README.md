@@ -14,10 +14,10 @@
 <br/>
 
 <div align="center">
-    <a href="https://github.com/devasignhq/maintainer-app?tab=Apache-2.0-1-ov-file">
-  <img src="https://img.shields.io/github/license/devasignhq/maintainer-app" alt="License">
-<a href="https://GitHub.com/devasignhq/maintainer-app/graphs/contributors">
-  <img src="https://img.shields.io/github/contributors/devasignhq/maintainer-app" alt="GitHub Contributors">
+    <a href="https://github.com/devasignhq/frontend?tab=Apache-2.0-1-ov-file">
+  <img src="https://img.shields.io/github/license/devasignhq/frontend" alt="License">
+<a href="https://GitHub.com/devasignhq/frontend/graphs/contributors">
+  <img src="https://img.shields.io/github/contributors/devasignhq/frontend" alt="GitHub Contributors">
 </a>
 <a href="https://devasign.com">
   <img src="https://img.shields.io/badge/Visit-devasign.com-orange" alt="Visit devasign.com">
@@ -39,7 +39,7 @@
   
   **Join our stargazers :)** 
 
-  <a href="https://github.com/devasignhq/maintainer-app">
+  <a href="https://github.com/devasignhq/frontend">
     <img src="https://img.shields.io/github/stars/devasignhq?style=social&label=Star&maxAge=2592000" alt="GitHub stars">
   </a>
 
@@ -47,14 +47,27 @@
   </div>
   <br/>
 
-  <a style="display: block; margin: 0 auto;">
+  <div align="center">
+    <a style="display: block; margin: 0 auto;">
       <picture>
-        <img alt="DevAsign Maintainer App" src="./public/devasign-ui.svg" style="display: block; margin: 0 auto;">
+        <img alt="DevAsign Maintainer App" src="./public/devasign-pm.svg" style="display: block; margin: 0 auto;">
+      </picture>
+    </a>
+  </div>
+  <br/>
+  <div align="center">
+    <a style="display: block; margin: 0 auto;">
+      <picture>
+        <img alt="DevAsign Contributor App" src="./public/devasign-contributor.svg" style="display: block; margin: 0 auto;">
       </picture>
     </a>
   </div>
 
-## DevAsign Maintainer App
+## DevAsign Frontend
+
+This monorepo contains both DevAsign frontend applications — the **Maintainer App** and the **Contributor App** — managed with [Turborepo](https://turbo.build/).
+
+### Maintainer App
 
 DevAsign Maintainer App empowers open-source project maintainers to:
 
@@ -65,7 +78,17 @@ DevAsign Maintainer App empowers open-source project maintainers to:
 - **Manage Payments**: Process bounty payments on-chain through the Stellar blockchain network.
 - **Configure Workflows**: Set up project-specific rules and automated approval thresholds.
 - **Team Collaboration**: Manage team members and project settings.
-  
+
+### Contributor App
+
+The contributor platform for discovering bounty tasks, submitting solutions, and receiving payments through the Stellar blockchain. The DevAsign Contributor App empowers open-source contributors to:
+
+- **Discover Bounties**: Browse available tasks across multiple projects and repositories
+- **Track Progress**: Monitor submissions, reviews, and payment status
+- **Earn Rewards**: Receive instant payments via Stellar blockchain upon task completion
+- **Collaborate**: Communicate with project maintainers and other contributors
+- **Manage Earnings**: View payment history and manage crypto wallet
+
 ## Tech Stack
 
 - **Framework**: Next.js 15 with React 19
@@ -76,6 +99,7 @@ DevAsign Maintainer App empowers open-source project maintainers to:
 - **HTTP Client**: Axios
 - **Forms**: Formik with Yup validation
 - **UI Components**: Custom components with React Icons
+- **Monorepo**: Turborepo with npm workspaces
 
 ## Prerequisites
 
@@ -92,26 +116,27 @@ DevAsign Maintainer App empowers open-source project maintainers to:
 
 #### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/devasignhq/app.devasign.com.git
-cd app.devasign.com
+git clone https://github.com/devasignhq/frontend.git
+cd frontend
 ```
 
 #### Step 2: Install Dependencies
 ```bash
-# Using npm
+# Using npm (installs dependencies for all apps and packages)
 npm install
-
-# Or using yarn
-yarn install
 ```
 
 #### Step 3: Environment Configuration
-1. Copy the example environment file:
+
+Each app requires its own `.env.local` file.
+
+1. Copy the example environment files:
 ```bash
-cp .env.example .env.local
+cp apps/contributor/.env.example apps/contributor/.env.local
+cp apps/pm/.env.example apps/pm/.env.local
 ```
 
-2. Configure your `.env.local` file with the following variables:
+2. Configure each `.env.local` file with the following variables:
 ```bash
 # Firebase Configuration
 NEXT_PUBLIC_FIREBASE_API_KEY="your-firebase-api-key"
@@ -125,16 +150,33 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="Q-SFQEFEEWEE"
 # API Configuration
 NEXT_PUBLIC_API_BASE_URL="api-url"
 
-# App Configuration
+# App Configuration (PM app only)
 NEXT_PUBLIC_NODE_ENV="development"
 ```
 
 #### Step 4: Start the Development Server
 ```bash
-# Start the development server
+# Run both apps simultaneously
 npm run dev
 
-# The app will be available at http://localhost:3000
+# Run only the Maintainer app (http://localhost:3000)
+npm run dev:pm
+
+# Run only the Contributor app (http://localhost:4000)
+npm run dev:contributor
+```
+
+## Project Structure
+
+```
+frontend/
+├── apps/
+│   ├── contributor/     # Contributor-facing Next.js app
+│   └── pm/              # Project Maintainer-facing Next.js app
+├── packages/
+│   └── shared/          # Shared components, hooks, models, and utilities
+├── package.json         # Root workspace config
+└── turbo.json           # Turborepo pipeline config
 ```
 
 ## Configuration
@@ -143,11 +185,11 @@ npm run dev
 1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com/)
 2. Enable Authentication and choose GitHub as your preferred sign-in method
 3. Get your Firebase configuration from Project Settings
-4. Add the configuration values to your `.env.local` file
+4. Add the configuration values to each app's `.env.local` file
 
 #### API Server Connection
 1. Ensure the DevAsign API server is running (see [server setup](https://github.com/devasignhq/devasign-api/))
-2. Update `NEXT_PUBLIC_API_BASE_URL` in your `.env.local` to point to your API server
+2. Update `NEXT_PUBLIC_API_BASE_URL` in each app's `.env.local` to point to your API server
 3. Verify the connection by checking the health endpoint at `/health`
 
 <!-- ## Contributing -->
@@ -157,7 +199,9 @@ npm run dev
 - **Label Integration**: Automatically sync with GitHub issue labels for seamless workflow
 - **Progress Tracking**: Monitor task status from creation to completion and payment
 
-DevAsign is open-source software licensed under the Apache 2.0 License. See [LICENSE](https://github.com/devasignhq/app.devasign.com/blob/main/LICENSE) for more details.
+## License
+
+DevAsign is open-source software licensed under the Apache 2.0 License. See [LICENSE](https://github.com/devasignhq/frontend/blob/main/LICENSE) for more details.
 
 <!-- ## Repo Activity
 
@@ -166,5 +210,4 @@ DevAsign is open-source software licensed under the Apache 2.0 License. See [LIC
 ## Related Projects
 
 - [DevAsign API Server](https://github.com/devasignhq/devasign-api) - Backend API and AI engine
-- [DevAsign Contributor App](https://github.com/devasignhq/contributor.devasign.com) - Frontend for contributors
 - [Soroban Task Escrow Contract](https://github.com/devasignhq/soroban-contract) - Task Escrow Management

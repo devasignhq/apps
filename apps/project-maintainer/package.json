@@ -1,0 +1,50 @@
+{
+  "name": "@devasign/app-pm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch"
+  },
+  "dependencies": {
+    "@devasign/shared": "*",
+    "@statsig/react-bindings": "^3.32.0",
+    "@statsig/session-replay": "^3.32.0",
+    "@statsig/web-analytics": "^3.32.0",
+    "@tailwindcss/postcss": "^4.1.4",
+    "ahooks": "^3.8.4",
+    "axios": "^1.8.4",
+    "firebase": "^11.6.0",
+    "formik": "^2.4.6",
+    "next": "^15.5.7",
+    "postcss": "^8.5.3",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
+    "react-toastify": "^11.0.5",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "socket.io-client": "^4.8.3",
+    "tailwind-merge": "^3.2.0",
+    "tailwindcss": "^4.1.4",
+    "yup": "^1.6.1",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.1",
+    "typescript": "^5"
+  }
+}
