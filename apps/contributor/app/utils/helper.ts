@@ -32,6 +32,11 @@ export function formatTime(isoString: string): string {
     });
 }
 
+/**
+ * Formats a timeline (in days) into a human-readable string with weeks and days.
+ * @param timeline - The timeline in days to format.
+ * @returns An object containing the display value (e.g., "2 weeks and 3 days"), weeks, and days.
+ */
 export function formatTimeline(timeline: number) {
     const weeks = Math.floor(timeline / 7);
     const days = timeline % 7;

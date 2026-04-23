@@ -22,7 +22,11 @@ export const githubProvider = new GithubAuthProvider();
 export const firestoreDB = getFirestore(app);
 export const storage = getStorage(app);
 
-export async function getCurrentUser() {
+/**
+ * Get current user from firebase auth
+ * @returns Promise<User | null>
+ */
+export async function getCurrentUser(): Promise<User | null> {
     const userPromise = new Promise<User | null>((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
             unsubscribe();

@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { BalanceLineNative, BalanceLineAsset, AccountRecord, AssetType } from "../models/horizon.model";
+import {
+    BalanceLineNative,
+    BalanceLineAsset,
+    AccountRecord,
+    AssetType
+} from "@devasign/shared/models/horizon.model";
 import { WalletAPI } from "./wallet.service";
 
 type WalletBalance = BalanceLineNative | BalanceLineAsset;

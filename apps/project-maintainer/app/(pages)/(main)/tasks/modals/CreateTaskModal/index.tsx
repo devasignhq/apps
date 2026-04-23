@@ -15,7 +15,7 @@ import {
     QueryRepositoryIssues,
     RepositoryDto,
     GetRepositoryResourcesResponse
-} from "@/app/models/github.model";
+} from "@devasign/shared/models/github.model";
 import { Data } from "ahooks/lib/useInfiniteScroll/types";
 import { CreateTaskDto, TIMELINE_TYPE } from "@/app/models/task.model";
 import { toast } from "react-toastify";

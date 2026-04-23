@@ -8,6 +8,9 @@ type MoneyInputProps = {
     defaultValue?: number | string;
 }
 
+/**
+ * MoneyInput component for formatting and handling currency input values.
+ */
 const MoneyInput = ({ attributes, setValue, defaultValue }: MoneyInputProps) => {
 
     useEffect(() => {

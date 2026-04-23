@@ -1,5 +1,5 @@
 import { MessageDto } from "@devasign/shared/models/message.model";
-import { IssueDto, IssueLabel } from "./github.model";
+import { IssueDto, IssueLabel } from "@devasign/shared/models/github.model";
 import { InstallationDto } from "./installation.model";
 import { UserDto } from "./user.model";
 import { TransactionDto } from "./wallet.model";
@@ -36,7 +36,7 @@ export type TaskDto = {
     createdAt: string;
     updatedAt: string;
     _count?: { taskActivities: number };
-    
+
     applications?: UserDto[];
     creator?: UserDto;
     contributor?: UserDto | null;
@@ -53,11 +53,11 @@ export type TaskIssue = Omit<IssueDto, "labels"> & {
 
 export type EscrowTransaction = {
     txHash: string;
-    method: "creation" 
-        | "increase_bounty" 
-        | "decrease_bounty"
-        | "assign_contributor"
-        | "bounty_payout";
+    method: "creation"
+    | "increase_bounty"
+    | "decrease_bounty"
+    | "assign_contributor"
+    | "bounty_payout";
 }
 
 export type TaskSubmission = {
@@ -69,7 +69,7 @@ export type TaskSubmission = {
     attachmentUrl: string | null;
     createdAt: string;
     updatedAt: string;
-    
+
     user?: UserDto;
     task?: TaskDto;
     installation?: InstallationDto;
@@ -83,7 +83,7 @@ export type TaskActivity = {
     viewed: boolean;
     createdAt: string;
     updatedAt: string;
-    
+
     task?: TaskDto;
     user?: UserDto | null;
     taskSubmission?: TaskSubmission | null;

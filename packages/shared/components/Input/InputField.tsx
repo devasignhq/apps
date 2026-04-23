@@ -23,6 +23,7 @@ const InputField = ({
     return (
         <div className={twMerge("relative w-full", extendedContainerClassName)}>
             {Icon && <Icon className="text-xl text-light-100 absolute top-1/2 -translate-y-1/2 left-2.5" />}
+
             {imageSrc && (
                 <Image 
                     src={imageSrc} 
@@ -32,6 +33,7 @@ const InputField = ({
                     className="absolute top-1/2 -translate-y-1/2 left-2.5" 
                 />
             )}
+            
             <input
                 type="text"
                 className={twMerge(

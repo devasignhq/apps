@@ -4,7 +4,7 @@ import { MdOutlineCheckBoxOutlineBlank } from "react-icons/md";
 import Image from "next/image";
 import Link from "next/link";
 import RegularDropdown from "@devasign/shared/components/Dropdown/Regular";
-import { IssueDto } from "@/app/models/github.model";
+import { IssueDto } from "@devasign/shared/models/github.model";
 import { CreateTaskDto, TimelineType } from "@/app/models/task.model";
 import { useState } from "react";
 import { object, string, number } from "yup";

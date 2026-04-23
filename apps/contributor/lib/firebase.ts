@@ -25,7 +25,9 @@ export function useLogoutUser() {
     return logoutUser;
 };
 
-// Checks if the user is signed out (used in pages where user needs to be authenticated before access is given)
+/**
+ * Checks if the user is signed out (used in pages where user needs to be authenticated before access is given)
+ */
 export const useUnauthenticatedUserCheck = () => {
     const router = useRouter();
 
@@ -40,7 +42,9 @@ export const useUnauthenticatedUserCheck = () => {
     return router;
 };
 
-// Checks if the user is signed in (used in authentication pages to redirect signed in users)
+/**
+ * Checks if the user is signed in (used in authentication pages to redirect signed in users)
+ */
 export const useAuthenticatedUserCheck = () => {
     const router = useRouter();
 

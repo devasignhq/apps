@@ -12,7 +12,7 @@ import { TaskAPI } from "@/app/services/task.service";
 import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 import { useGetInstallationRepositories } from "@/app/utils/hooks";
-import { GetRepositoryResourcesResponse } from "@/app/models/github.model";
+import { GetRepositoryResourcesResponse } from "@devasign/shared/models/github.model";
 import SearchBox from "../components/SearchBox";
 import { ApiResponse } from "@devasign/shared/models/_global";
 import { enumToStringConverter } from "@/app/utils/helper";

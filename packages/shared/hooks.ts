@@ -3,6 +3,11 @@ import { useToggle, useClickAway } from "ahooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DependencyList, EffectCallback, useEffect, useRef, useState } from "react";
 
+/**
+ * Custom hook to get and update search parameters from the URL search string
+ * 
+ * @returns {Object} Object containing searchParams, updateSearchParams, and removeSearchParams
+ */
 export function useCustomSearchParams() {
     const router = useRouter();
     const pathname = usePathname();
@@ -54,6 +59,15 @@ export function useCustomSearchParams() {
     };
 }
 
+/**
+ * Hook to manage a popup or menu state.
+ * 
+ * @returns {Object} An object containing:
+ * - `menuButtonRef`: Ref to be attached to the menu trigger button.
+ * - `menuRef`: Ref to be attached to the menu container.
+ * - `openMenu`: Boolean indicating if the menu is open.
+ * - `toggleMenu`: Function to toggle the menu visibility.
+ */
 export function usePopup() {
     const menuButtonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -69,6 +83,12 @@ export function usePopup() {
     };
 }
 
+/**
+ * Custom useEffect hook that ensures the effect is only called once per dependency change.
+ * 
+ * @param {EffectCallback} effect - The effect function to run.
+ * @param {DependencyList} deps - The dependency list.
+ */
 export function useEffectOnce(effect: EffectCallback, deps: DependencyList = []) {
     const effectCalled = useRef(false);
     const prevDeps = useRef<DependencyList>(deps);
@@ -88,6 +108,12 @@ export function useEffectOnce(effect: EffectCallback, deps: DependencyList = [])
     }, deps);
 }
 
+/**
+ * Hook to track the current viewport width.
+ * Updates dynamically when the window is resized.
+ * 
+ * @returns {number} The current viewport width in pixels.
+ */
 export function useViewPort() {
     const [viewPortWidth, setViewPortWidth] = useState(0);
 

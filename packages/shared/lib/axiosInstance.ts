@@ -22,6 +22,9 @@ axiosInstance.interceptors.request.use(async (config) => {
     return config;
 });
 
+/**
+ * HTTP client for making API requests.
+ */
 export class HttpClient {
     static async get<T>(url: string, config?: AxiosRequestConfig) {
         try {
