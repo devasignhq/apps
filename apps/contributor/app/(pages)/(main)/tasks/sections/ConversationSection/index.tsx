@@ -12,6 +12,14 @@ import MessageBlock from "./MessageBlock";
 import useUserStore from "@/app/state-management/useUserStore";
 import { TiMessages } from "react-icons/ti";
 
+/**
+ * Inline preview for a file attachment queued before sending.
+ *
+ * For images, it generates a data-URL preview via FileReader (NOT
+ * URL.createObjectURL) to avoid false-positive XSS warnings from
+ * CodeQL scanners. Non-image files show a generic file icon.
+ */
+
 const AttachmentPreview = ({ file, onRemove }: { file: File; onRemove: () => void }) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -62,6 +70,16 @@ const AttachmentPreview = ({ file, onRemove }: { file: File; onRemove: () => voi
     );
 };
 
+/**
+ * Right-most panel: real-time conversation between contributor and project maintainer.
+ *
+ * Messages are fetched once on mount, then kept in sync via Firestore listeners
+ * (see `useManageMessages` hook). The conversation input supports both text and
+ * file attachments — files are uploaded to Firebase Storage before the message
+ * document is created, ensuring attachment URLs are stable.
+ *
+ * The message composer is hidden for completed tasks to prevent post-completion chat.
+ */
 const ConversationSection = () => {
     const { currentUser } = useUserStore();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -97,12 +115,20 @@ const ConversationSection = () => {
         setAttachments(prev => prev.filter((_, i) => i !== index));
     };
 
+    /**
+     * Uploads any attached files first, then creates a new message document
+     * in Firestore with the text body and attachment URLs.
+     *
+     * The local messages array is updated optimistically with the created
+     * message (which already has a server-assigned ID and timestamp).
+     */
     const addNewMessage = async () => {
         setSendingMessage(true);
 
         try {
             const uploadedRef: string[] = [];
 
+            // Upload all attachments in parallel before creating the message
             if (attachments.length > 0) {
                 const uploadPromises = attachments.map(attachment =>
                     MessageAPI.uploadFile(attachment, activeTask?.id || "")
@@ -171,10 +197,13 @@ const ConversationSection = () => {
                     ) : (
                         orderedDateLabels.map((dateLabel) => (
                             <div key={dateLabel} className="w-full">
+                                {/* Sticky date separator that stays visible while scrolling through a day's messages */}
                                 <div className="w-fit sticky top-2.5 px-[15px] py-[3px] my-5 mx-auto bg-dark-500 border border-primary-200 text-body-medium text-light-200">
                                     {dateLabel}
                                 </div>
                                 <div className="w-full flex flex-col">
+                                    {/* Dynamic bottom margin per message: larger gap between different senders,
+                                        smaller gap between consecutive messages from the same user */}
                                     {groupedMessages[dateLabel].map((message, index) => (
                                         <MessageBlock
                                             key={message.id}

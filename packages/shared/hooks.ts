@@ -13,6 +13,12 @@ export function useCustomSearchParams() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    /**
+     * Updates the URL search parameters and navigates to the new URL.
+     * 
+     * @param {Record<string, string | number | boolean>} params - An object containing the key-value pairs to update or add to the search parameters.
+     * @param {boolean} [override=false] - If true, clears existing search parameters before applying the new ones.
+     */
     const updateSearchParams = (params: Record<string, string | number | boolean>, override = false) => {
         const currentSearchParams = override
             ? new URLSearchParams()
@@ -35,6 +41,11 @@ export function useCustomSearchParams() {
         router.push(newUrl);
     };
 
+    /**
+     * Removes specified keys from the URL search parameters and navigates to the new URL.
+     * 
+     * @param {string | string[]} keys - A string or an array of strings representing the keys to remove from the search parameters.
+     */
     const removeSearchParams = (keys: string | string[]) => {
         const currentSearchParams = new URLSearchParams(searchParams);
         const keysToRemove = Array.isArray(keys) ? keys : [keys];

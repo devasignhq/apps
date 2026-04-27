@@ -21,6 +21,21 @@ import { useEffectOnce } from "@devasign/shared/hooks";
 import { useState } from "react";
 import { HiOutlineRefresh } from "react-icons/hi";
 
+/**
+ * Contributor wallet page — two-panel layout.
+ *
+ * Left panel: Wallet summary showing live USDC balance (streamed from the
+ * Stellar Horizon API), KYC status, and contribution statistics.
+ *
+ * Right panel: Paginated transaction history table with links to the
+ * Stellar block explorer for on-chain verification.
+ *
+ * The USDC balance is monitored via `useStreamAccountBalance`, which opens
+ * a Horizon SSE (Server-Sent Events) connection. When the balance changes
+ * (e.g. bounty payout lands), the page automatically reloads transactions
+ * and refreshes user data so the contribution stats stay in sync.
+ */
+
 const Wallet = () => {
     useUnauthenticatedUserCheck();
     const { currentUser, setCurrentUser } = useUserStore();
@@ -29,10 +44,12 @@ const Wallet = () => {
     const [isInitialPageLoad, setIsInitialPageLoad] = useState(true);
     const { value: isKycCheckEnabled } = useFeatureGate(FEATURE_GATES.REQUIRE_KYC);
 
+    /** Re-fetches the user record to keep contribution stats in sync with the API. */
     const fetchUser = async () => {
         const response = await UserAPI.getUser();
         if (!response?.data) return;
 
+        // Handle both response shapes: bare UserDto vs { user, walletStatus } wrapper
         const userData = "walletStatus" in response.data
             ? response.data.user
             : response.data;
@@ -75,8 +92,8 @@ const Wallet = () => {
         { isNoMore: (response) => !response?.hasMore }
     );
 
-    // Reload transactions and fetch user data when USDC balance changes
-    // This is needed when user is on wallet page and an active bounty was completed
+    // When the Horizon balance stream emits a new value (e.g. after a bounty payout),
+    // reload the transaction table and refresh user stats so everything stays consistent.
     useUpdateEffect(() => {
         reloadTransactions();
         fetchUser();
@@ -299,6 +316,7 @@ const Wallet = () => {
 
 export default Wallet;
 
+/** Maps internal transaction category enum values to user-friendly labels. */
 const formatCategory = (category: TransactionCategory) => {
     switch (category) {
         case "BOUNTY":

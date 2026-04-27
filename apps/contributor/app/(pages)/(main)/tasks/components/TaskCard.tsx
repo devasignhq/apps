@@ -6,6 +6,21 @@ import { moneyFormat, taskStatusFormatter } from "@/app/utils/helper";
 import { useContext, useState, useEffect } from "react";
 import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 
+/**
+ * Individual task card in the sidebar task list.
+ *
+ * State management: Each card holds its own copy of the task data so it can
+ * reflect updates independently. Two sync paths keep it fresh:
+ *   1. `defaultTask` prop changes (e.g. after the infinite scroll list reloads).
+ *   2. `activeTask` context changes (when this card is the currently selected one),
+ *      so that actions taken in the detail panel (e.g. submit task) are reflected
+ *      immediately in the sidebar without a full list reload.
+ *
+ * Unread messages: A real-time Firestore listener tracks unread message count
+ * for each task. The badge is only shown when the card is NOT the active selection,
+ * since viewing a task implies the user is reading its messages.
+ */
+
 type TaskCardProps = {
     task: TaskDto;
     active: boolean;
@@ -30,7 +45,8 @@ const TaskCard = ({ task: defaultTask, active, onClick }: TaskCardProps) => {
         setTask(prev => ({ ...prev, ...activeTask! }));
     }, [active, activeTask]);
 
-    // Listen to unread messages count
+    // Subscribe to real-time unread message count from Firestore.
+    // Only active for tasks that have been assigned (have a contributorId).
     useEffect(() => {
         if (!currentUser?.userId || !task.id || !task.contributorId) return;
 
@@ -93,6 +109,10 @@ const TaskCard = ({ task: defaultTask, active, onClick }: TaskCardProps) => {
                     {task.issue?.url.split("/").slice(-4)[0]}/
                     {task.issue?.url.split("/").slice(-4)[1]}
                 </p>
+                {/* Status badge logic:
+                    - If a contributor is assigned but it's NOT the current user → "Not Accepted"
+                    - Otherwise, show the formatted task status (only when not actively selected,
+                      since the detail panel already shows the status prominently) */}
                 {(task.contributorId && (task.contributorId !== currentUser?.userId)) ? (
                     <p className="w-fit py-0.5 px-[7px] text-body-tiny font-bold bg-primary-400 text-dark-500">
                         Not Accepted

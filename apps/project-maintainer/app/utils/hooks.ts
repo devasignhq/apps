@@ -29,6 +29,7 @@ export function useGetInstallationRepositories() {
     const [repositories, setRepositories] = useState<RepositoryDto[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // useLockFn is used to prevent the effect from running multiple times
     useAsyncEffect(useLockFn(async () => {
         if (!activeInstallation) return;
 

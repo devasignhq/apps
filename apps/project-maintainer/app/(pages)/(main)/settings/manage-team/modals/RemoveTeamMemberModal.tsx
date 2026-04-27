@@ -20,9 +20,9 @@ const RemoveTeamMemberModal = ({ toggleModal }: RemoveTeamMemberModalProps) => {
                     <p className="text-light-100">lenny.malcolm@gmail.com</p>
                 </div>
             </div>
-            <div className="h-[1px] w-full bg-dark-200" />
+            <div className="h-px w-full bg-dark-200" />
             <p className="my-[30px] text-body-medium text-dark-100">
-                By removing this collaborator, they won’t have access to 
+                By removing this collaborator, they won’t have access to
                 manage this project anymore till you add them back.
             </p>
             <div className="flex gap-2.5">
@@ -30,7 +30,7 @@ const RemoveTeamMemberModal = ({ toggleModal }: RemoveTeamMemberModalProps) => {
                     format="OUTLINE"
                     text="Cancel"
                     attributes={{
-                        onClick: () => {}
+                        onClick: () => { }
                     }}
                 />
                 <ButtonPrimary
@@ -38,12 +38,12 @@ const RemoveTeamMemberModal = ({ toggleModal }: RemoveTeamMemberModalProps) => {
                     text="Remove"
                     sideItem={<IoMdClose />}
                     attributes={{
-                        onClick: () => {}
+                        onClick: () => { }
                     }}
                 />
             </div>
         </PopupModalLayout>
     );
 };
- 
+
 export default RemoveTeamMemberModal;

@@ -11,6 +11,15 @@ import RegularDropdown from "@devasign/shared/components/Dropdown/Regular";
 import { TaskAPI } from "@/app/services/task.service";
 import useUserStore from "@/app/state-management/useUserStore";
 
+/**
+ * Modal for requesting a deadline extension on an assigned task.
+ *
+ * The contributor selects a time increment (in days or weeks) and optionally
+ * provides a reason. The value is normalised to days before submission
+ * (weeks × 7). The project maintainer receives the request and can accept
+ * or reject it, which triggers a TIMELINE_MODIFICATION message in the
+ * conversation thread.
+ */
 const extensionSchema = object({
     timeline: number().required("Timeline is required"),
     timelineType: string().oneOf(["WEEK", "DAY"]).required("Required"),
@@ -37,6 +46,7 @@ const RequestTimeExtensionModal = ({ toggleModal }: RequestTimeExtensionModalPro
             setLoading(true);
 
             try {
+                // Normalise weeks to days for the API
                 const requestedTimeline = values.timelineType === "WEEK"
                     ? values.timeline! * 7
                     : values.timeline!;

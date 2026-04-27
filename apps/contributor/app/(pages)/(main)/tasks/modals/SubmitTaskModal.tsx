@@ -13,6 +13,11 @@ import RequestResponseModal from "@devasign/shared/components/RequestResponseMod
 import { handleApiErrorResponse } from "@/app/utils/helper";
 import { toast } from "react-toastify";
 
+/**
+ * Validation: Pull request URL must be a valid GitHub URL.
+ * An optional attachment URL can link to supporting documentation
+ * (e.g. Notion page, Loom video) to strengthen the submission.
+ */
 const taskSchema = object({
     pullRequest: string()
         .required("Pull request is required")
@@ -27,6 +32,14 @@ type SubmitTaskModalProps = {
     toggleModal: () => void;
 };
 
+/**
+ * Modal for contributors to submit completed task work.
+ *
+ * On successful submission, the active task state is updated immediately
+ * (optimistic-style) with the response data, and a success confirmation
+ * modal is shown. The project maintainer is notified server-side to
+ * review the PR and approve/reject the submission.
+ */
 const SubmitTaskModal = ({ toggleModal }: SubmitTaskModalProps) => {
     const { activeTask, setActiveTask } = useContext(ActiveTaskContext);
     const [openRequestResponseModal, { toggle: toggleRequestResponseModal }] = useToggle(false);

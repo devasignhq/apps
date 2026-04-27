@@ -17,11 +17,26 @@ import { HiOutlineRefresh } from "react-icons/hi";
 import { PiCodeSimpleBold } from "react-icons/pi";
 import useUserStore from "@/app/state-management/useUserStore";
 
+/**
+ * Middle panel of the tasks page showing the active task's detailed overview.
+ *
+ * Layout adapts based on assignment state:
+ * - Full-width when the conversation panel is hidden (OPEN tasks / unassigned).
+ * - Narrower (min 550px) when shown alongside the conversation panel.
+ *
+ * Top section: Task metadata grid (project, repo, issue, bounty, timeline/status).
+ * Bottom section: Three possible states —
+ *   1. Assigned to current user → Updates feed + Submit/Extend actions.
+ *   2. Assigned to another user  → "Not Accepted" notice.
+ *   3. OPEN (pending delegation)  → "Application Sent" notice.
+ */
+
 const TaskOverviewSection = () => {
     const { currentUser } = useUserStore();
     const { activeTask } = useContext(ActiveTaskContext);
     const [openSubmitTaskModal, { toggle: toggleSubmitTaskModal }] = useToggle(false);
     const [openRequestTimeExtensionModal, { toggle: toggleRequestTimeExtensionModal }] = useToggle(false);
+    // Extract org/repo/issues/number segments from the full GitHub issue URL
     const issueUrl = activeTask?.issue?.url.split("/").slice(-4) as string[];
 
     const {
@@ -127,6 +142,8 @@ const TaskOverviewSection = () => {
                         )}
                     </div>
 
+                    {/* Action buttons: only visible for active (non-OPEN, non-COMPLETED) tasks
+                        owned by the current contributor. "Submit Task" is only for IN_PROGRESS. */}
                     {(activeTask?.status !== "COMPLETED" && activeTask?.status !== "OPEN") && (
                         <div className="flex items-center gap-5">
                             {activeTask?.status === "IN_PROGRESS" && (
