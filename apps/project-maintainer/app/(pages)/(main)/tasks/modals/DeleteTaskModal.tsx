@@ -8,6 +8,15 @@ import { handleApiErrorResponse, handleApiSuccessResponse, moneyFormat } from "@
 import { TaskAPI } from "@/app/services/task.service";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 
+/**
+ * Destructive action modal — permanently deletes a task and removes
+ * the bounty label from the associated GitHub issue.
+ *
+ * On deletion, the escrowed bounty amount is refunded to the installation's
+ * wallet balance. The task list is refreshed via the `refresh` URL param,
+ * and the active task is set to null to clear the detail panel.
+ */
+
 type DeleteTaskModalProps = {
     toggleModal: () => void;
 };

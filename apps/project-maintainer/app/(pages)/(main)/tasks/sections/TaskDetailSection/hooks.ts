@@ -4,10 +4,31 @@ import useUserStore from "@/app/state-management/useUserStore";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useLockFn } from "ahooks";
 
+/** Day-keyed message groups used to render date separator headers in the conversation. */
 export interface GroupedMessages {
     [dateLabel: string]: MessageDto[];
 }
 
+/**
+ * Manages the full message lifecycle for the conversation view.
+ *
+ * Architecture:
+ * - Loads the initial message history from the API (`getTaskMessages`).
+ * - Subscribes to two independent Firestore listeners:
+ *   1. `listenToTaskMessages`     — contributor-sent messages (their userId)
+ *   2. `listenToExtensionReplies` — system messages like time-extension
+ *      replies (maintainer's own userId)
+ * - Each listener only receives messages newer than the last known message
+ *   from that user, preventing duplicate processing of the initial batch.
+ *
+ * Debounce: `updateMessage` is wrapped in `useLockFn` with a 2.5s delay.
+ * This serialises rapid Firestore snapshots that fire in quick succession
+ * (e.g. when both listeners trigger near-simultaneously).
+ *
+ * Deduplication: A `focus` event listener deduplicates messages when the
+ * browser tab is re-focused, handling the edge case where Firestore pushes
+ * a duplicate snapshot after the tab was backgrounded (browser throttling).
+ */
 export const useManageMessages = (taskId: string, contributorId: string) => {
     const { currentUser } = useUserStore();
     const messageBoxRef = useRef<HTMLDivElement>(null);
@@ -97,6 +118,8 @@ export const useManageMessages = (taskId: string, contributorId: string) => {
         };
     }, []);
 
+    // Auto-scroll to the bottom of the message box whenever new
+    // messages arrive. The 200ms timeout ensures the DOM has rendered.
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
         if (messageBoxRef.current) {
@@ -162,6 +185,7 @@ export const formatDateLabel = (date: Date): string => {
     }
 };
 
+/** Groups messages by calendar day using formatted date labels (Today, Yesterday, day name, or full date). */
 export const groupMessagesByDay = (messages: MessageDto[]): GroupedMessages => {
     const grouped: GroupedMessages = {};
 
@@ -181,6 +205,7 @@ export const groupMessagesByDay = (messages: MessageDto[]): GroupedMessages => {
     return grouped;
 };
 
+/** Sorts date label keys chronologically by using the timestamp of the first message in each group. */
 export const getOrderedDateLabels = (groupedMessages: GroupedMessages): string[] => {
     const labels = Object.keys(groupedMessages);
 
@@ -200,6 +225,8 @@ export const getOrderedDateLabels = (groupedMessages: GroupedMessages): string[]
     });
 };
 
+/** Finds the most recent message sent by `userId`, used to set the
+ *  Firestore listener's "start after" timestamp to avoid re-processing old messages. */
 const getLastUserMessage = (messages: MessageDto[], userId: string) => {
     for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].userId === userId) {

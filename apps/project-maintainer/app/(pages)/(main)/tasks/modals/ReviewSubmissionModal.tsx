@@ -11,6 +11,18 @@ import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 import { moneyFormat, formatDateTime } from "@/app/utils/helper";
 import { TaskAPI } from "@/app/services/task.service";
 
+/**
+ * First step of the submission review flow.
+ *
+ * Shows the PR link, optional attachment, contributor profile, and timestamp.
+ * The maintainer can either "Ignore" (close modal) or "Approve Submission"
+ * (opens the nested ApproveSubmissionModal for final confirmation / payout).
+ *
+ * On mount, the activity is automatically marked as viewed via
+ * `TaskAPI.markActivityAsViewed` to clear the unread indicator on the
+ * parent TaskCard.
+ */
+
 type ReviewSubmissionModalProps = {
     taskActivity: TaskActivity;
     toggleModal: () => void;

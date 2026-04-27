@@ -12,6 +12,20 @@ import { MdOutlineCancel } from "react-icons/md";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 
+/**
+ * GitHub App installation callback page.
+ *
+ * After a maintainer installs (or modifies) the DeVAsign GitHub App,
+ * GitHub redirects here with `?installation_id=<id>` in the URL.
+ * This page:
+ *   1. Validates the user is authenticated (redirects to auth if not,
+ *      preserving the installation_id for post-login pickup).
+ *   2. Deduplicates — if the installation already exists in the local store,
+ *      skips the API call and redirects straight to tasks.
+ *   3. Saves the installation via the API. First-time installs route to
+ *      onboarding; subsequent installs go to the tasks dashboard.
+ *   4. On failure, shows a retry/reinstall prompt.
+ */
 type ReboundAction = "INSTALL" | "RETRY" | "";
 
 const Installation = () => {
@@ -44,7 +58,7 @@ const Installation = () => {
             return;
         }
 
-        // Check if installationId already exists in installationList
+        // Dedup: skip the API call if this installation is already known
         const existingInstallation = installationList.find((inst) => inst.id === installationId);
         if (existingInstallation) {
             setActiveInstallation(existingInstallation);
@@ -56,6 +70,7 @@ const Installation = () => {
         try {
             const response = await InstallationAPI.createInstallation({ installationId });
             
+            // First installation ever → route to onboarding; otherwise → tasks
             const noCurrentInstallations = !activeInstallation && installationList.length === 0;
 
             setReboundAction("");

@@ -3,6 +3,15 @@ import { twMerge } from "tailwind-merge";
 import { FiSearch } from "react-icons/fi";
 import { MdCancel } from "react-icons/md";
 
+/**
+ * Reusable search input with a toggling action icon.
+ *
+ * The trailing button alternates between a search icon (submits the query)
+ * and a cancel icon (clears the current filter). This is controlled by
+ * `displaySearchIcon`. The `enableSearchOption` prop prevents submission
+ * of queries shorter than the parent's minimum threshold.
+ */
+
 type SearchBoxProps = {
     attributes: React.InputHTMLAttributes<HTMLInputElement>;
     enableSearchOption: boolean;

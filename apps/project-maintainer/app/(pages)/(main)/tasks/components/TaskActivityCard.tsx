@@ -6,6 +6,19 @@ import ReviewTaskApplicationModal from "../modals/ReviewTaskApplicationModal";
 import { useState } from "react";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 
+/**
+ * Activity card in the task overview sidebar.
+ *
+ * Renders a single task activity item and determines which review modal
+ * to open based on the activity type:
+ * - Has `taskSubmissionId` → opens ReviewSubmissionModal (PR review flow)
+ * - Otherwise → opens ReviewTaskApplicationModal (contributor application)
+ *
+ * The `viewed` flag is tracked locally to immediately dim the card after
+ * the user clicks it, and a `viewedTaskActivity` URL param is written
+ * so the parent TaskCard can decrement its unseen activity counter.
+ */
+
 type TaskActivityCardProps = {
     activity: TaskActivity;
 };

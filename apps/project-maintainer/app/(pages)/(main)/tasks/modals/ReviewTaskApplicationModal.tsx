@@ -15,6 +15,21 @@ import ApproveTaskDelegationModal from "./ApproveTaskDelegationModal";
 import { TaskAPI } from "@/app/services/task.service";
 import Tooltip from "@devasign/shared/components/Tooltip";
 
+/**
+ * Contributor application review modal — displays a rich profile card
+ * (GitHub link, KYC status, completed bounties, tech stack) along with
+ * the GitHub issue reference.
+ *
+ * The KYC column is conditionally shown based on the `REQUIRE_KYC`
+ * Statsig feature gate. When enabled, verified contributors are badged
+ * green; unverified ones show a red cancel icon.
+ *
+ * The maintainer can "Ignore" (close) or "Delegate Task", which opens
+ * the nested ApproveTaskDelegationModal for final confirmation.
+ *
+ * Like ReviewSubmissionModal, the activity is auto-marked as viewed on mount.
+ */
+
 type ReviewTaskApplicationModalProps = {
     taskActivity: TaskActivity;
     toggleModal: () => void;

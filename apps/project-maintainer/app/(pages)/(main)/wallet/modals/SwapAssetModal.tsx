@@ -13,6 +13,18 @@ import { toast } from "react-toastify";
 import { useXLMUSDCFromStellarDEX } from "@/app/services/horizon.service";
 import { handleApiErrorResponse, handleApiSuccessResponse, moneyFormat } from "@/app/utils/helper";
 
+/**
+ * On-chain asset swap modal (XLM ↔ USDC) via the Stellar DEX.
+ *
+ * The `from` prop determines the swap direction. Both "from" and "to"
+ * amount fields are bidirectionally linked: editing either one
+ * auto-calculates the other using the live XLM/USDC price fetched from
+ * the Stellar DEX orderbook (polled every 10s, paused during submission).
+ *
+ * Client-side balance guard prevents submitting swaps that exceed the
+ * available balance. On success, the parent's `reloadTransactions`
+ * callback is called which also triggers swap tracking in HorizonHelper.
+ */
 const swapAssetSchema = object({
     fromAmount: string().required("Required"),
     toAmount: string().required("Required")
@@ -78,8 +90,12 @@ const SwapAssetModal = ({
         }
     });
 
+    // Fetch live XLM/USDC price from the Stellar DEX orderbook.
+    // Polling pauses while the form is submitting to avoid distracting UI jitter.
     const { xlmPriceInUsdc } = useXLMUSDCFromStellarDEX(10000, formik.isSubmitting);
 
+    /** Bidirectional amount calculator: editing either field recalculates the other
+     *  using the current DEX price. Handles comma-formatted money strings. */
     const handleAssetEquivalent = (equivalent: { field: "fromAmount" | "toAmount", value: string }) => {
         if (!xlmPriceInUsdc) return;
 

@@ -3,6 +3,18 @@
 import { useViewPort } from "@devasign/shared/hooks";
 import { TbBrowser } from "react-icons/tb";
 
+/**
+ * Authentication layout — split-panel design.
+ *
+ * Desktop (xl+): Left panel (42%) renders the auth form via `children`,
+ * right panel (58%) shows the SCF co-branding and tagline. The gradient
+ * bg is applied conditionally based on viewport width to avoid rendering
+ * issues on very narrow desktop screens.
+ *
+ * Tablet/Mobile: The entire auth UI is replaced with a "Switch to Desktop"
+ * prompt, consistent with the rest of the app's desktop-only enforcement.
+ */
+
 export default function AuthLayout({
     children
 }: Readonly<{

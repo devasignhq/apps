@@ -15,6 +15,26 @@ import { twMerge } from "tailwind-merge";
 import MoneyInput from "@devasign/shared/components/Input/MoneyInput";
 import Tooltip from "@devasign/shared/components/Tooltip";
 
+/**
+ * Inline card for configuring a single bounty in the CreateTaskModal.
+ *
+ * Two display modes:
+ * - **Collapsed** (`showFields=false`): Checkbox + issue title/labels.
+ *   Used in the issue-browsing phase.
+ * - **Expanded** (`showFields=true`): Adds bounty (USDC), timeline (number),
+ *   and timeline unit (WEEK/DAY) inputs. Used in the review phase.
+ *
+ * The form is validated on mount and on every change (`validateOnMount`).
+ * `useUpdateEffect` on `formik.isValid` / `formik.values` keeps the parent's
+ * `selectedTasks` map in sync — the parent uses the `valid` flag to gate
+ * the "Publish" button.
+ *
+ * Upload status is reflected via border colour:
+ *   - PENDING: pulse animation
+ *   - CREATED: green border
+ *   - FAILED: red border
+ */
+
 type TaskPayload = {
     payload: CreateTaskDto;
     valid: boolean;

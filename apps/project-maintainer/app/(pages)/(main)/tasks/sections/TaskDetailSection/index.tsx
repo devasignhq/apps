@@ -6,15 +6,31 @@ import { ActiveTaskContext } from "../../contexts/ActiveTaskContext";
 import { MessageAPI } from "@/app/services/message.service";
 import useUserStore from "@/app/state-management/useUserStore";
 
+/**
+ * Middle panel — renders the task description and/or conversation.
+ *
+ * View routing depends on task status:
+ * - OPEN tasks show the Description (DetailsView) only, since there's no
+ *   assigned contributor to chat with.
+ * - All other statuses show a tabbed interface with Description and
+ *   Conversation views. The Conversation tab displays a real-time
+ *   unread message count badge driven by a Firestore listener.
+ *
+ * The active view resets to "Description" whenever the selected task
+ * changes (via `activeTask.id`).
+ */
+
 const TaskDetailSection = () => {
     const { currentUser } = useUserStore();
     const { activeTask } = useContext(ActiveTaskContext);
     const [activeView, setActiveView] = useState(viewOptions[0]);
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
+    // Reset to the description tab whenever the user switches tasks
     useEffect(() => setActiveView(viewOptions[0]), [activeTask?.id]);
     
-    // Listen to unread messages count
+    // Track unread messages from the assigned contributor via Firestore.
+    // Only subscribes when a contributor is assigned (has a userId).
     useEffect(() => {
         if (!currentUser || !activeTask || !activeTask.contributor?.userId) return;
 

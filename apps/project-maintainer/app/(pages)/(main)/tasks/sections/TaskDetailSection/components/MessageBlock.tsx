@@ -16,6 +16,24 @@ import Link from "next/link";
 import { ActiveTaskContext } from "../../../contexts/ActiveTaskContext";
 import { MessageAPI } from "@/app/services/message.service";
 
+/**
+ * Renders a single message in the conversation thread.
+ *
+ * Two rendering modes:
+ * - **GENERAL**: Standard chat bubble. Aligned right for own messages (dark bg),
+ *   left for the contributor (accent bg). Supports text + file attachments
+ *   with image preview thumbnails.
+ * - **SYSTEM (time extension request)**: Rendered as a card with Approve/Reject
+ *   buttons. Only non-own system messages get the action UI. Once responded,
+ *   the message flags `metadata.responded = true` to prevent repeat actions.
+ *   Own system messages (the maintainer's reply) show a coloured confirmation
+ *   strip (green for approved, red for rejected).
+ *
+ * Read receipts: An `IntersectionObserver` marks messages as read when >=50%
+ * of the element is visible. This fires a Firestore update and immediately
+ * reflects in local state, then disconnects the observer.
+ */
+
 type MessageBlockProps = {
     message: MessageDto;
     margin: string;
@@ -65,6 +83,12 @@ const MessageBlock = ({ message, margin, setMessages }: MessageBlockProps) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.userId]);
 
+    /**
+     * Handles the maintainer's response to a contributor's time-extension request.
+     * On success, updates the message's `metadata.responded` flag in Firestore
+     * to disable the action buttons, and merges the updated task data (new timeline)
+     * into the active task context.
+     */
     const replyExtensionRequest = async () => {
         setReplying(true);
 

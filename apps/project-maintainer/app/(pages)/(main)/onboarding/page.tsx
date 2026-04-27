@@ -18,6 +18,23 @@ import { useUnauthenticatedUserCheck } from "@/lib/firebase";
 import Link from "next/link";
 import Tooltip from "@devasign/shared/components/Tooltip";
 
+/**
+ * First-run onboarding wizard for new project maintainers.
+ *
+ * Guides users through a sequential setup:
+ *   1. Connect Project Repository — prompts to install the DeVAsign
+ *      GitHub App if no installation exists yet.
+ *   2. Fund Wallet — once an installation is connected, shows live
+ *      USDC/XLM balances and a "Top Up" button.
+ *   3. Create First Bounty — shown as a draft bar with a count of
+ *      selected issues. "Create Bounty" is only enabled when the wallet
+ *      has a positive USDC balance AND the installation is active.
+ *
+ * The balance is polled every 10 seconds (via `manualBalanceCheck`) because
+ * the Horizon SSE stream can be unreliable during the initial top-up window
+ * when the Stellar account may not have been fully funded yet.
+ */
+
 const Onboarding = () => {
     const router = useUnauthenticatedUserCheck();
     const { currentUser } = useUserStore();
@@ -39,6 +56,8 @@ const Onboarding = () => {
         loading: loadingInstallationRepos
     } = useGetInstallationRepositories();
 
+    // Poll balance on a 10s interval as a fallback for Horizon SSE,
+    // which can miss the first account-creation event for new wallets.
     useEffect(() => {
         const interval = setInterval(() => {
             manualBalanceCheck();
@@ -109,6 +128,8 @@ const Onboarding = () => {
                             </span>
                         </p>
                         <div className="flex items-center gap-[30px]">
+                            {/* "Create Bounty" is gated behind positive USDC balance to prevent
+                                creating bounties the wallet can't cover */}
                             {Number(usdcBalance) > 0 && (
                                 <Tooltip
                                     message="Reinstall or unsuspend DevAsign app on GitHub to create new tasks"
