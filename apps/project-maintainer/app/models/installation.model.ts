@@ -1,3 +1,4 @@
+import { RepositoryDto } from "@devasign/shared/models/github.model";
 import { UserInstallationPermissionDto } from "./permission.model";
 import { SubscriptionPlanDto } from "./subscription-plan.model";
 import { TaskDto, TaskSubmission } from "./task.model";
@@ -23,6 +24,7 @@ export type InstallationDto = {
     userInstallationPermissions?: UserInstallationPermissionDto[];
     transactions?: TransactionDto[];
     taskSubmissions?: TaskSubmission[];
+    repositories?: RepositoryDto[];
 }
 
 export type InstallationAccount = {
@@ -58,6 +60,7 @@ export type QueryInstallationDto = {
     page?: string;
     limit?: string;
     sort?: "asc" | "desc";
+    getRepositories?: "true";
 }
 
 export type QueryInstallationIssues = {

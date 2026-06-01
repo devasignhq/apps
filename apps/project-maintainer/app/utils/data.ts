@@ -1,5 +1,6 @@
 export const ROUTES = {
     ACCOUNT: "/authenticate/account",
+    EXTENSION_SUCCESS: "/authenticate/extension-success",
     SUBSCRIPTION_PLAN: "/authenticate/subscription-plan",
     ONBOARDING: "/onboarding",
     OVERVIEW: "/overview",

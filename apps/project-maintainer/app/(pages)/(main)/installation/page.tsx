@@ -11,6 +11,7 @@ import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
 import { MdOutlineCancel } from "react-icons/md";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
+import useUserStore from "@/app/state-management/useUserStore";
 
 /**
  * GitHub App installation callback page.
@@ -29,12 +30,12 @@ import { useCustomSearchParams } from "@devasign/shared/hooks";
 type ReboundAction = "INSTALL" | "RETRY" | "";
 
 const Installation = () => {
+    const { currentUser } = useUserStore();
     const router = useUnauthenticatedUserCheck();;
     const { searchParams } = useCustomSearchParams();
     const installationId = searchParams.get("installation_id");
     const [isProcessing, setIsProcessing] = useState(true);
     const [reboundAction, setReboundAction] = useState<ReboundAction>("");
-
     const {
         activeInstallation,
         installationList,
@@ -42,6 +43,47 @@ const Installation = () => {
         setInstallationList
     } = useInstallationStore();
 
+    /**
+     * Handles the redirect to the extension after installation.
+     */
+    const handleExtensionRedirect = async () => {
+        const extensionAuthStr = localStorage.getItem("extensionAuth");
+        if (extensionAuthStr) {
+            try {
+                const extAuth = JSON.parse(extensionAuthStr);
+                const installationsRes = await InstallationAPI.getInstallations({ getRepositories: "true" });
+                const installations = installationsRes.data;
+                
+                // Done to avoid hitting the URL maximum length limit
+                const minimalUser = {
+                    i: currentUser?.userId,
+                    u: currentUser?.username,
+                    e: currentUser?.email
+                };
+                const minimalInstallations = installations.map((inst) => ({
+                    i: inst.id,
+                    r: (inst.repositories || []).map((repo) => repo.name)
+                }));
+
+                const encodedUser = encodeURIComponent(JSON.stringify(minimalUser));
+                const encodedInstallations = encodeURIComponent(JSON.stringify(minimalInstallations));
+                const ideLink = `${extAuth.ide}://devasign.devasign/auth?user=${encodedUser}&installations=${encodedInstallations}`;
+                
+                localStorage.removeItem("extensionAuth");
+                localStorage.setItem("ideLink", ideLink);
+                router.push(ROUTES.EXTENSION_SUCCESS);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+        return false;
+    };
+
+    /**
+     * 
+     * @returns 
+     */
     const saveInstallation = async () => {
         setIsProcessing(true);
         const user = await getCurrentUser();
@@ -63,6 +105,12 @@ const Installation = () => {
         if (existingInstallation) {
             setActiveInstallation(existingInstallation);
             toast.info("Installation already exists.");
+            
+            // If the user arrived from the extension, construct a deep link to return them
+            // to their IDE with their updated authentication and installation data.
+            const redirected = await handleExtensionRedirect();
+            if (redirected) return;
+
             router.push(ROUTES.TASKS);
             return;
         }
@@ -77,6 +125,11 @@ const Installation = () => {
             setActiveInstallation(response.data);
             setInstallationList([...installationList, response.data]);
             handleApiSuccessResponse(response);
+
+            // If the user arrived from the extension, construct a deep link to return them
+            // to their IDE with their updated authentication and installation data.
+            const redirected = await handleExtensionRedirect();
+            if (redirected) return;
 
             if (noCurrentInstallations) {
                 router.push(ROUTES.ONBOARDING);
@@ -97,7 +150,7 @@ const Installation = () => {
     useAsyncEffect(useLockFn(() => saveInstallation()), [router, installationId]);
 
     return (isProcessing || reboundAction === "") ? (
-        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+        <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
             <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                 <TbProgress className="text-[44px] text-primary-400 mx-auto rotate-loading-slower" />
                 <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Saving Installation</h2>
@@ -107,7 +160,7 @@ const Installation = () => {
             </div>
         </div>
     ) : (
-        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+        <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
             <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                 <MdOutlineCancel className="text-[44px] text-indicator-500 mx-auto" />
                 <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Process Failed</h2>
