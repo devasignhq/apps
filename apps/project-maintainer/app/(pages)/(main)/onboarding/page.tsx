@@ -10,7 +10,7 @@ import useUserStore from "@/app/state-management/useUserStore";
 import { useStreamAccountBalance } from "@/app/services/horizon.service";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
 import useTaskStore from "@/app/state-management/useTaskStore";
-import { moneyFormat, openInNewTab } from "@/app/utils/helper";
+import { moneyFormat } from "@/app/utils/helper";
 import { ROUTES } from "@/app/utils/data";
 import { useEffect } from "react";
 import { useGetInstallationRepositories } from "@/app/utils/hooks";
@@ -86,7 +86,7 @@ const Onboarding = () => {
                                 text="Install in GitHub"
                                 sideItem={<FiArrowUpRight />}
                                 attributes={{
-                                    onClick: () => openInNewTab(ROUTES.INSTALLATION.NEW)
+                                    onClick: () => window.location.href = ROUTES.INSTALLATION.NEW
                                 }}
                                 extendedClassName="bg-light-200 hover:bg-light-100"
                             />
@@ -156,7 +156,7 @@ const Onboarding = () => {
                     </div>
                 ) : (
                     <div className="w-full p-10 border border-primary-200 flex items-center justify-between gap-10 
-                        bg-[linear-gradient(130.86deg,_rgba(0,_26,_37,_0.5)_15.53%,_rgba(163,_82,_7,_0.5)_79.38%)]"
+                        bg-[linear-gradient(130.86deg,rgba(0,26,37,0.5)_15.53%,rgba(163,82,7,0.5)_79.38%)]"
                     >
                         <div className="flex items-center gap-[5px]">
                             <Image
