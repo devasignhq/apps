@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
 import { ROUTES } from "@/app/utils/data";
 import { FaGithub } from "react-icons/fa";
@@ -11,8 +12,6 @@ import { auth, getCurrentUser, githubProvider } from "@/lib/firebase";
 import { signInWithPopup, getAdditionalUserInfo } from "@firebase/auth";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
-import { InstallationAPI } from "@/app/services/installation.service";
-import { UserDto } from "@/app/models/user.model";
 import { useRouter } from "next/navigation";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
 
@@ -37,6 +36,7 @@ const Account = () => {
     const installationId = searchParams.get("installation_id");
     const { currentUser, setCurrentUser } = useUserStore();
     const { installationList } = useInstallationStore();
+    const [isAuthenticatingExtension, setIsAuthenticatingExtension] = useState(false);
 
     useAsyncEffect(async () => {
         const user = await getCurrentUser();
@@ -48,7 +48,10 @@ const Account = () => {
         if (shouldRedirectToExtension) {
             localStorage.setItem("extensionAuth", JSON.stringify({ source, ide }));
 
-            if (user) toastId = toast.loading("Authenticating...");
+            if (user) {
+                toastId = toast.loading("Authenticating...");
+                setIsAuthenticatingExtension(true);
+            }
         }
 
         if (!user || !currentUser) {
@@ -60,7 +63,7 @@ const Account = () => {
         // check if they came from the extension to redirect them back, otherwise route to the tasks dashboard.
         if ((currentUser?._count && currentUser._count.installations > 0) || installationList.length > 0) {
             if (shouldRedirectToExtension) {
-                const redirected = await handleExtensionRedirect(currentUser!);
+                const redirected = await handleExtensionRedirect();
 
                 if (!redirected) {
                     toast.update(toastId!, {
@@ -99,38 +102,29 @@ const Account = () => {
     /**
      * Handles the redirect to the extension after authentication.
      */
-    const handleExtensionRedirect = async (userObj: UserDto) => {
+    const handleExtensionRedirect = async () => {
         const extensionAuthStr = localStorage.getItem("extensionAuth");
-        if (extensionAuthStr) {
-            try {
-                const extAuth = JSON.parse(extensionAuthStr);
-                const installationsRes = await InstallationAPI.getInstallations({ getRepositories: "true" });
-                const installations = installationsRes.data;
+        if (!extensionAuthStr) {
+            return false;
+        }
 
-                // Done to avoid hitting the URL maximum length limit
-                const minimalUser = {
-                    i: userObj.userId,
-                    u: userObj.username,
-                    e: userObj.email
-                };
-                const minimalInstallations = installations.map((inst) => ({
-                    i: inst.id,
-                    r: (inst.repositories || []).map((repo) => repo.name)
-                }));
+        try {
+            const extAuth = JSON.parse(extensionAuthStr);
 
-                const encodedUser = encodeURIComponent(JSON.stringify(minimalUser));
-                const encodedInstallations = encodeURIComponent(JSON.stringify(minimalInstallations));
-                const ideLink = `${extAuth.ide}://devasign.devasign/auth?user=${encodedUser}&installations=${encodedInstallations}`;
-
-                localStorage.removeItem("extensionAuth");
-                localStorage.setItem("ideLink", ideLink);
-                router.push(ROUTES.EXTENSION_SUCCESS);
-                return true;
-            } catch {
+            const refreshToken = auth.currentUser?.refreshToken;
+            if (!refreshToken) {
                 return false;
             }
+
+            const ideLink = `${extAuth.ide}://devasign.devasign/auth?refreshToken=${encodeURIComponent(refreshToken)}`;
+
+            localStorage.removeItem("extensionAuth");
+            localStorage.setItem("ideLink", ideLink);
+            router.push(ROUTES.EXTENSION_SUCCESS);
+            return true;
+        } catch {
+            return false;
         }
-        return false;
     };
 
     /**
@@ -185,7 +179,7 @@ const Account = () => {
 
                 // Route based on whether the user has connected any repositories
                 if (response.data._count && response.data._count.installations > 0) {
-                    const redirected = await handleExtensionRedirect(response.data);
+                    const redirected = await handleExtensionRedirect();
                     if (!redirected) {
                         router.push(ROUTES.TASKS);
                     }
@@ -237,12 +231,14 @@ const Account = () => {
                         ? "Saving User..."
                         : fetchingUser
                             ? "Loading User..."
-                            : "Continue with GitHub"
+                            : isAuthenticatingExtension
+                                ? "Authenticating..."
+                                : "Continue with GitHub"
                 }
                 sideItem={<FaGithub />}
                 attributes={{
                     onClick: handleGitHubAuth,
-                    disabled: creatingUser || fetchingUser
+                    disabled: creatingUser || fetchingUser || isAuthenticatingExtension
                 }}
                 extendedClassName="w-[264px]"
             />

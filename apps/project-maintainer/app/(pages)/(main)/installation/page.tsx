@@ -1,5 +1,5 @@
 "use client";
-import { getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
+import { auth, getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
 import { ROUTES } from "@/app/utils/data";
 import { useAsyncEffect, useLockFn } from "ahooks";
 import { InstallationAPI } from "@/app/services/installation.service";
@@ -11,7 +11,6 @@ import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
 import { MdOutlineCancel } from "react-icons/md";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
-import useUserStore from "@/app/state-management/useUserStore";
 
 /**
  * GitHub App installation callback page.
@@ -30,8 +29,7 @@ import useUserStore from "@/app/state-management/useUserStore";
 type ReboundAction = "INSTALL" | "RETRY" | "";
 
 const Installation = () => {
-    const { currentUser } = useUserStore();
-    const router = useUnauthenticatedUserCheck();;
+    const router = useUnauthenticatedUserCheck();
     const { searchParams } = useCustomSearchParams();
     const installationId = searchParams.get("installation_id");
     const [isProcessing, setIsProcessing] = useState(true);
@@ -48,36 +46,27 @@ const Installation = () => {
      */
     const handleExtensionRedirect = async () => {
         const extensionAuthStr = localStorage.getItem("extensionAuth");
-        if (extensionAuthStr) {
-            try {
-                const extAuth = JSON.parse(extensionAuthStr);
-                const installationsRes = await InstallationAPI.getInstallations({ getRepositories: "true" });
-                const installations = installationsRes.data;
-                
-                // Done to avoid hitting the URL maximum length limit
-                const minimalUser = {
-                    i: currentUser?.userId,
-                    u: currentUser?.username,
-                    e: currentUser?.email
-                };
-                const minimalInstallations = installations.map((inst) => ({
-                    i: inst.id,
-                    r: (inst.repositories || []).map((repo) => repo.name)
-                }));
+        if (!extensionAuthStr) {
+            return false;
+        }
 
-                const encodedUser = encodeURIComponent(JSON.stringify(minimalUser));
-                const encodedInstallations = encodeURIComponent(JSON.stringify(minimalInstallations));
-                const ideLink = `${extAuth.ide}://devasign.devasign/auth?user=${encodedUser}&installations=${encodedInstallations}`;
-                
-                localStorage.removeItem("extensionAuth");
-                localStorage.setItem("ideLink", ideLink);
-                router.push(ROUTES.EXTENSION_SUCCESS);
-                return true;
-            } catch {
+        try {
+            const extAuth = JSON.parse(extensionAuthStr);
+
+            const refreshToken = auth.currentUser?.refreshToken;
+            if (!refreshToken) {
                 return false;
             }
+
+            const ideLink = `${extAuth.ide}://devasign.devasign/auth?refreshToken=${encodeURIComponent(refreshToken)}`;
+
+            localStorage.removeItem("extensionAuth");
+            localStorage.setItem("ideLink", ideLink);
+            router.push(ROUTES.EXTENSION_SUCCESS);
+            return true;
+        } catch {
+            return false;
         }
-        return false;
     };
 
     /**
