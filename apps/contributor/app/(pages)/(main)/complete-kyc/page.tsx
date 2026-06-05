@@ -14,6 +14,27 @@ import { useCustomSearchParams } from "@devasign/shared/hooks";
 import useUserStore from "@/app/state-management/useUserStore";
 import { useFeatureGate } from "@statsig/react-bindings";
 
+/**
+ * KYC verification page powered by the Sumsub Web SDK.
+ *
+ * Flow:
+ * 1. Gated behind authentication (useUnauthenticatedUserCheck).
+ * 2. If the user is already verified OR the KYC feature gate is off,
+ *    they are immediately redirected to the appropriate next page.
+ * 3. Otherwise, the user can start the Sumsub identity check. The SDK
+ *    is rendered inside a modal overlay and communicates results via `onMessage`.
+ * 4. On a successful "GREEN" review, the user's verified status is
+ *    updated locally and they are navigated forward.
+ * 5. Users may skip KYC, but they'll be warned that certain enterprise
+ *    bounties will be unavailable without verification.
+ *
+ * Query params:
+ * - `taskId`:   Preserved through the flow so the user lands on the
+ *               correct bounty application page afterwards.
+ * - `prevPage`: If set, the user returns to that page instead of the
+ *               default application/tasks route after verification.
+ */
+/** Shape of the Sumsub SDK callback payload when `idCheck.onApplicantStatusChanged` fires. */
 type SumsubPayload = {
     reviewStatus: string;
     reviewResult: {
@@ -33,6 +54,10 @@ const Application = () => {
     const [displaySumsubWebsdk, setDisplaySumsubWebsdk] = useState(false);
     const [openSkipKycModal, { toggle: toggleSkipKycModal }] = useToggle(false);
 
+    /**
+     * Determines where to redirect after KYC is complete (or skipped).
+     * Priority: prevPage query param > taskId application page > tasks dashboard.
+     */
     const handleNavigation = useCallback(() => {
         if (prevPage) {
             const route = ROUTES[prevPage as keyof typeof ROUTES];
@@ -46,16 +71,26 @@ const Application = () => {
         router.push(`${ROUTES.APPLICATION}?taskId=${taskId}`);
     }, [prevPage, router, taskId]);
 
+    // Auto-redirect if KYC is already done or the feature gate is off.
+    // Prevents verified users from seeing the KYC prompt unnecessarily.
     useEffect(() => {
         if (currentUser?.verified || !isKycCheckEnabled) {
             handleNavigation();
         }
     }, [currentUser, handleNavigation, isKycCheckEnabled]);
 
+    /**
+     * Initialises and mounts the Sumsub verification widget.
+     * The second argument to `snsWebSdk.init` is a token-refresh callback
+     * invoked automatically when the access token expires mid-session.
+     *
+     * We listen for `idCheck.onApplicantStatusChanged` — the only event
+     * that signals a definitive verification outcome. A "GREEN" answer
+     * means the check passed.
+     */
     const launchWebSdk = (accessToken: string) => {
         const snsWebSdkInstance = snsWebSdk.init(
             accessToken,
-            // token update callback
             () => UserAPI.generateSumsubToken().then((res) => res.data.token)
         )
             .withConf({
@@ -82,6 +117,7 @@ const Application = () => {
         snsWebSdkInstance.launch("#sumsub-websdk-container");
     };
 
+    /** Requests a server-generated Sumsub access token, then launches the SDK widget. */
     const handleSumsubToken = async () => {
         setGeneratingToken(true);
 
@@ -127,17 +163,17 @@ const Application = () => {
                         }}
                     />
                 </div>
-                <div className={`fixed inset-0 z-[100] flex items-center justify-center ${displaySumsubWebsdk ? "block" : "hidden"}`}>
+                <div className={`fixed inset-0 z-100 flex items-center justify-center ${displaySumsubWebsdk ? "block" : "hidden"}`}>
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
                     <div
                         id="sumsub-websdk-container"
-                        className="relative z-[101] w-full max-w-[820px] max-h-[92dvh] overflow-y-auto bg-white rounded-xl"
+                        className="relative z-101 w-full max-w-[820px] max-h-[92dvh] overflow-y-auto bg-white rounded-xl"
                     />
                 </div>
             </div>
 
             {openSkipKycModal && (
-                <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+                <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
                     <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                         <LuShieldOff className="text-[44px] text-primary-400 mx-auto" />
                         <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Skip KYC Verification</h2>

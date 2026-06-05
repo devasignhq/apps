@@ -9,6 +9,21 @@ import { FiCheckCircle, FiFile, FiDownload } from "react-icons/fi";
 import { MdOutlineCancel } from "react-icons/md";
 import Link from "next/link";
 
+/**
+ * Renders a single message bubble in the conversation thread.
+ *
+ * Handles two message types:
+ * - `GENERAL`: Standard text/attachment message. Current user's messages
+ *   are right-aligned (dark bg), maintainer's are left-aligned (accent bg).
+ * - `TIMELINE_MODIFICATION`: System-like messages for timeline extension
+ *   requests. The contributor sees their outgoing request, while responses
+ *   from the maintainer show accepted/rejected status with colour-coded borders.
+ *
+ * Read receipts: An IntersectionObserver marks incoming messages as read
+ * when 50% of the message element is visible in the viewport. This fires
+ * once per message and auto-disconnects to avoid repeated API calls.
+ */
+
 type MessageBlockProps = {
     message: MessageDto;
     margin: string;

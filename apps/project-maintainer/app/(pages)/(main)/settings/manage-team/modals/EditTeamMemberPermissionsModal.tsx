@@ -23,7 +23,7 @@ const EditTeamMemberPermissionsModal = ({ toggleModal }: EditTeamMemberPermissio
             return { ...previousValue, [field]: true };
         });
     };
-    
+
     return (
         <PopupModalLayout title="Edit Collaborator Permissions" toggleModal={toggleModal}>
             <div className="flex items-center gap-[30px] mt-[30px]">
@@ -36,11 +36,11 @@ const EditTeamMemberPermissionsModal = ({ toggleModal }: EditTeamMemberPermissio
                     <p className="text-light-100">lenny.malcolm@gmail.com</p>
                 </div>
             </div>
-            <div className="h-[1px] w-full bg-dark-200 my-[30px]" />
+            <div className="h-px w-full bg-dark-200 my-[30px]" />
             <ul className="flex flex-col gap-3 list-none items-start">
                 {permissions.map((permission, index) => (
-                    <li 
-                        key={index} 
+                    <li
+                        key={index}
                         className="flex items-center gap-2.5 cursor-pointer"
                         onClick={() => toggleItems(`${index}`)}
                     >
@@ -56,7 +56,7 @@ const EditTeamMemberPermissionsModal = ({ toggleModal }: EditTeamMemberPermissio
                 ))}
             </ul>
             <p className="my-[30px] text-body-medium text-dark-100">
-                Set the permissions you want this collaborator to have in this project. 
+                Set the permissions you want this collaborator to have in this project.
                 Ensure you trust them before assigning wallet control to them.
             </p>
             <div className="flex gap-2.5">
@@ -64,7 +64,7 @@ const EditTeamMemberPermissionsModal = ({ toggleModal }: EditTeamMemberPermissio
                     format="OUTLINE"
                     text="Cancel"
                     attributes={{
-                        onClick: () => {}
+                        onClick: () => { }
                     }}
                 />
                 <ButtonPrimary
@@ -72,14 +72,14 @@ const EditTeamMemberPermissionsModal = ({ toggleModal }: EditTeamMemberPermissio
                     text="Update"
                     sideItem={<FiCheck />}
                     attributes={{
-                        onClick: () => {}
+                        onClick: () => { }
                     }}
                 />
             </div>
         </PopupModalLayout>
     );
 };
- 
+
 export default EditTeamMemberPermissionsModal;
 
 const permissions = [

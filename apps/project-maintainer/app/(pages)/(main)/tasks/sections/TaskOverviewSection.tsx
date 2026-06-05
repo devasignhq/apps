@@ -18,6 +18,22 @@ import { TaskAPI } from "@/app/services/task.service";
 import useUserStore from "@/app/state-management/useUserStore";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
 
+/**
+ * Right sidebar panel — task overview metadata + scrollable activity feed.
+ *
+ * Top section: Displays status badge, assigned contributor, bounty amount,
+ * and timeline/time-left/completion-time (depending on task status).
+ *
+ * Editing controls (bounty, timeline, delete) are only shown for OPEN tasks
+ * with zero existing activities AND an ACTIVE installation, preventing
+ * changes after a contributor has already applied.
+ *
+ * Bottom section: Infinite-scrollable activity feed that shows new
+ * applications and submission reviews. A per-task socket room pushes
+ * real-time `activity_update` events to auto-reload the feed and merge
+ * any metadata changes (e.g. status transitions) into the active task.
+ */
+
 const TaskOverviewSection = () => {
     const { activeTask, setActiveTask } = useContext(ActiveTaskContext);
     const { currentUser } = useUserStore();
@@ -59,6 +75,9 @@ const TaskOverviewSection = () => {
         }
     );
 
+    // Real-time activity feed: Join the task's socket room and listen
+    // for new applications or submission events. When an event arrives,
+    // reload the activity list and merge any metadata into the active task.
     useEffect(() => {
         if (!activeTask?.id || !currentUser) return;
 
@@ -113,6 +132,8 @@ const TaskOverviewSection = () => {
                         <p className="text-body-tiny text-light-100">Bounty</p>
                         <div className="flex items-center gap-1">
                             <p className="text-body-large text-light-200">{moneyFormat(activeTask?.bounty || "")} USDC</p>
+                            {/* Bounty is only editable on OPEN tasks with no applications yet,
+                                preventing mid-negotiation bounty changes */}
                             {(activeTask?.status === "OPEN" &&
                                 activeTask?._count &&
                                 activeTask._count.taskActivities < 1 &&

@@ -8,6 +8,21 @@ import useUserStore from "@/app/state-management/useUserStore";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 import { socket, joinSocketRoom, leaveSocketRoom } from "@/lib/socket";
 
+/**
+ * Individual task card in the sidebar list.
+ *
+ * Each card maintains its own local `task` state, kept in sync through
+ * two paths:
+ *   1. `defaultTask` prop — updated when the parent list reloads.
+ *   2. `activeTask` context — updated when the selected task mutates
+ *      (e.g. bounty changed in a modal).
+ *
+ * For non-active cards, a per-task socket room (`task_<id>`) listens for
+ * `activity_update` events and increments the unseen activity counter.
+ * A Firestore listener tracks unread messages (only relevant when a
+ * contributor has been assigned). Both counts feed into a combined
+ * notification badge shown on the card.
+ */
 type TaskCardProps = {
     task: TaskDto;
     active: boolean;
@@ -40,7 +55,8 @@ const TaskCard = ({ task: defaultTask, active }: TaskCardProps) => {
         setTask(prev => ({ ...prev, ...activeTask! }));
     }, [active, activeTask]);
 
-    // Listen to task activities and messages count
+    // Subscribe to real-time updates for non-active cards only.
+    // Active cards receive updates through the context instead.
     useEffect(() => {
         if (!currentUser || active) return;
 
@@ -50,6 +66,7 @@ const TaskCard = ({ task: defaultTask, active }: TaskCardProps) => {
         const handleActivity = (activity: { type: string; taskId?: string; metadata?: Partial<TaskDto> }) => {
             if (activity.type === "task" && activity.taskId === task.id) {
                 setUnseenTaskActivities(prev => prev + 1);
+                // Merge any metadata (e.g. status change) into the local card
                 if (activity.metadata) {
                     setTask(prev => ({ ...prev, ...activity.metadata }));
                 }
@@ -63,6 +80,7 @@ const TaskCard = ({ task: defaultTask, active }: TaskCardProps) => {
             leaveSocketRoom(room);
         };
 
+        // Only listen for unread messages when a contributor is assigned
         let unsubscribeFromMessages = () => {};
         if (task.contributorId) {
             unsubscribeFromMessages = MessageAPI.listenToUnreadMessagesCount(
@@ -78,7 +96,8 @@ const TaskCard = ({ task: defaultTask, active }: TaskCardProps) => {
         };
     }, [currentUser, active, task.id, task.contributorId]);
 
-    // Remove viewed task activity when task is active
+    // Decrement the unseen counter when the user views an activity
+    // on the currently-active card (via `viewedTaskActivity` URL param)
     useEffect(() => {
         if (!viewedTaskActivity || !active) return;
 

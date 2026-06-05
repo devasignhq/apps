@@ -28,6 +28,23 @@ import { WalletAPI } from "@/app/services/wallet.service";
 import { Data } from "ahooks/lib/useInfiniteScroll/types";
 import { useUnauthenticatedUserCheck } from "@/lib/firebase";
 
+/**
+ * Project wallet page — dual-asset management for the active installation.
+ *
+ * Top section: Two balance cards (XLM + USDC) streamed live from Horizon.
+ * Each card offers a "Swap" shortcut for in-place asset conversion via
+ * the Stellar DEX. The swap direction (`from`) is tracked so the modal
+ * pre-fills the correct source asset.
+ *
+ * Bottom section: Tab-filtered transaction history. Swap categories are
+ * sent as a comma-separated pair ("SWAP_XLM,SWAP_USDC") to the API since
+ * a swap always involves both assets.
+ *
+ * On mount, `recordWalletTopups` reconciles any untracked top-ups
+ * (e.g. direct Stellar transfers) by scanning the Horizon history and
+ * creating matching transaction records in the DeVAsign backend.
+ */
+
 const Wallet = () => {
     useUnauthenticatedUserCheck();
     const { activeInstallation } = useInstallationStore();
@@ -51,6 +68,8 @@ const Wallet = () => {
         toggleSwapAssetModal();
     };
 
+    /** After a swap, record the direction in HorizonHelper so the next
+     *  balance stream update can correctly attribute the incoming amount. */
     const handleSwapSuccess = () => {
         // Track the swap based on the current swap direction
         const toAsset = swapAssetFrom === "XLM" ? "USDC" : "XLM";
@@ -104,7 +123,9 @@ const Wallet = () => {
         }
     );
 
-    // Record wallet topups on mount
+    // Reconcile any direct-deposit top-ups that Horizon recorded but the
+    // DeVAsign backend hasn't tracked yet. If new records were created,
+    // reload the transaction table to show them.
     useAsyncEffect(useLockFn(async () => {
         if (!activeInstallation) return;
 
@@ -117,7 +138,8 @@ const Wallet = () => {
         } catch { }
     }), [activeInstallation]);
 
-    // Reload transactions when XLM or USDC balance changes
+    // When Horizon reports a balance change (e.g. incoming bounty refund or swap),
+    // refresh the transaction table to reflect the new state.
     useUpdateEffect(() => {
         reloadTransactions();
     }, [xlmBalance, usdcBalance]);

@@ -17,6 +17,19 @@ import { toast } from "react-toastify";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
 import Tooltip from "@devasign/shared/components/Tooltip";
 
+/**
+ * Confirmation modal for delegating a task to an applicant.
+ *
+ * Delegation is a one-way action: once assigned, the contributor owns the
+ * task until the timeline expires. The maintainer cannot reassign during
+ * that window.
+ *
+ * The "Yes, Proceed" button is gated behind the installation's ACTIVE status.
+ * If the GitHub App has been uninstalled or suspended, a tooltip prompts the
+ * maintainer to reinstall before they can delegate. This prevents orphaned
+ * tasks where the app can no longer post issue comments or listen for PRs.
+ */
+
 type ApproveTaskDelegationModalProps = {
     taskActivity: TaskActivity;
     toggleModal: () => void;

@@ -3,11 +3,22 @@ import { useToggle, useClickAway } from "ahooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DependencyList, EffectCallback, useEffect, useRef, useState } from "react";
 
+/**
+ * Custom hook to get and update search parameters from the URL search string
+ * 
+ * @returns {Object} Object containing searchParams, updateSearchParams, and removeSearchParams
+ */
 export function useCustomSearchParams() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
+    /**
+     * Updates the URL search parameters and navigates to the new URL.
+     * 
+     * @param {Record<string, string | number | boolean>} params - An object containing the key-value pairs to update or add to the search parameters.
+     * @param {boolean} [override=false] - If true, clears existing search parameters before applying the new ones.
+     */
     const updateSearchParams = (params: Record<string, string | number | boolean>, override = false) => {
         const currentSearchParams = override
             ? new URLSearchParams()
@@ -30,6 +41,11 @@ export function useCustomSearchParams() {
         router.push(newUrl);
     };
 
+    /**
+     * Removes specified keys from the URL search parameters and navigates to the new URL.
+     * 
+     * @param {string | string[]} keys - A string or an array of strings representing the keys to remove from the search parameters.
+     */
     const removeSearchParams = (keys: string | string[]) => {
         const currentSearchParams = new URLSearchParams(searchParams);
         const keysToRemove = Array.isArray(keys) ? keys : [keys];
@@ -54,6 +70,15 @@ export function useCustomSearchParams() {
     };
 }
 
+/**
+ * Hook to manage a popup or menu state.
+ * 
+ * @returns {Object} An object containing:
+ * - `menuButtonRef`: Ref to be attached to the menu trigger button.
+ * - `menuRef`: Ref to be attached to the menu container.
+ * - `openMenu`: Boolean indicating if the menu is open.
+ * - `toggleMenu`: Function to toggle the menu visibility.
+ */
 export function usePopup() {
     const menuButtonRef = useRef<HTMLButtonElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -69,6 +94,12 @@ export function usePopup() {
     };
 }
 
+/**
+ * Custom useEffect hook that ensures the effect is only called once per dependency change.
+ * 
+ * @param {EffectCallback} effect - The effect function to run.
+ * @param {DependencyList} deps - The dependency list.
+ */
 export function useEffectOnce(effect: EffectCallback, deps: DependencyList = []) {
     const effectCalled = useRef(false);
     const prevDeps = useRef<DependencyList>(deps);
@@ -88,6 +119,12 @@ export function useEffectOnce(effect: EffectCallback, deps: DependencyList = [])
     }, deps);
 }
 
+/**
+ * Hook to track the current viewport width.
+ * Updates dynamically when the window is resized.
+ * 
+ * @returns {number} The current viewport width in pixels.
+ */
 export function useViewPort() {
     const [viewPortWidth, setViewPortWidth] = useState(0);
 

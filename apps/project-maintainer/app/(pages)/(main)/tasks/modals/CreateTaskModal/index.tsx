@@ -15,7 +15,7 @@ import {
     QueryRepositoryIssues,
     RepositoryDto,
     GetRepositoryResourcesResponse
-} from "@/app/models/github.model";
+} from "@devasign/shared/models/github.model";
 import { Data } from "ahooks/lib/useInfiniteScroll/types";
 import { CreateTaskDto, TIMELINE_TYPE } from "@/app/models/task.model";
 import { toast } from "react-toastify";
@@ -30,6 +30,28 @@ import { ApiResponse } from "@devasign/shared/models/_global";
 import { socket, joinSocketRoom, leaveSocketRoom } from "@/lib/socket";
 import { useStreamAccountBalance } from "@/app/services/horizon.service";
 
+/**
+ * Multi-issue bounty creation wizard.
+ *
+ * The modal is split into two phases:
+ *   1. **Selection**: Browse issues per-repo with filters (labels, milestones,
+ *      sort). Checking an issue adds it to the `selectedTasks` map. Toggling
+ *      "Issues Selected" shows only the checked issues with inline bounty/
+ *      timeline editors.
+ *   2. **Publishing**: Clicking "Publish" processes each task sequentially,
+ *      joining an installation socket room per-task for live progress toasts
+ *      (e.g. "Escrowing bounty", "Labelling GitHub issue"). On success, the
+ *      issue is removed from the queue; on failure, it's retained as a draft.
+ *
+ * Key behaviours:
+ * - Bounty labels are preloaded per-repo on mount via `getOrCreateBountyLabel`.
+ * - Total bounty is validated against the live USDC balance (streamed from
+ *   Horizon). "Publish" is disabled when total exceeds the wallet balance.
+ * - Drafts survive modal close via `useTaskStore.draftTasks` (zustand + persist).
+ * - The Horizon stream is intentionally stopped during upload to avoid
+ *   balance jitter from concurrent escrow operations.
+ *
+ */
 type TaskPayload = {
     payload: CreateTaskDto;
     valid: boolean;
@@ -109,7 +131,9 @@ const CreateTaskModal = ({
         setActiveRepo(installationRepos[0]);
     }, [installationRepos.length]);
 
-    // Preload bounty labels for all repositories
+    // Preload bounty labels for all repos so they're ready when the
+    // user switches repos. Each repo needs a bounty label ID to tag
+    // the GitHub issue when the task is published.
     useAsyncEffect(async () => {
         if (!activeInstallation || installationRepos.length === 0) return;
 
@@ -221,6 +245,18 @@ const CreateTaskModal = ({
         });
     };
 
+    /**
+     * Sequential task creation pipeline.
+     *
+     * First click ("Proceed") toggles to the selected-issues view.
+     * Second click ("Publish") processes each task one-by-one:
+     * - Joins the installation socket room for live progress toasts.
+     * - Converts timeline from weeks to days if needed.
+     * - Creates the task via the API (which escrows the bounty and labels
+     *   the GitHub issue).
+     * - On partial failure, succeeded tasks are removed from the queue
+     *   and failed ones are retained as drafts for retry.
+     */
     const createTasks = async () => {
         if (selectedTasks.size === 0) {
             toast.error("Please select at least one issue.");
@@ -344,6 +380,7 @@ const CreateTaskModal = ({
         }
     };
 
+    /** Persist the current selection as drafts in zustand store (survives modal close). */
     const saveDraft = () => {
         const drafts = Array.from(selectedTasks.values()).map(task => task.payload);
         setDraftTasks(drafts);
@@ -691,6 +728,8 @@ const CreateTaskModal = ({
 
 export default CreateTaskModal;
 
+/** Fallback for when no repo/installation is selected. Returns empty resources
+ *  after a short delay to keep the loading skeleton visible briefly. */
 const delayedEmptyResources = (): Promise<ApiResponse<GetRepositoryResourcesResponse>> => {
     return new Promise((resolve) => {
         setTimeout(() => {

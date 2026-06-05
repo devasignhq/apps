@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { BalanceLineNative, BalanceLineAsset, AccountRecord, AssetType } from "../models/horizon.model";
+import {
+    BalanceLineNative,
+    BalanceLineAsset,
+    AccountRecord,
+    AssetType
+} from "@devasign/shared/models/horizon.model";
 
 type WalletBalance = BalanceLineNative | BalanceLineAsset;
 type USDCBalance = BalanceLineAsset<AssetType.credit4>;
@@ -20,10 +25,10 @@ export class HorizonAPI {
     static getBaseUrl() {
         return process.env.NEXT_PUBLIC_STELLAR_URL!;
     }
-    
+
     static streamAccount(walletAddress: string) {
         const baseUrl = this.getBaseUrl();
-        
+
         const eventSource = new EventSource(
             `${baseUrl}/accounts/${walletAddress}`
         );
@@ -32,6 +37,9 @@ export class HorizonAPI {
     }
 }
 
+/**
+ * Hook for real-time Stellar account balance streaming.
+ */
 export function useStreamAccountBalance(walletAddress: string | undefined) {
     const [state, setState] = useState<StreamState>({
         xlmBalance: "0.00",
@@ -40,7 +48,7 @@ export function useStreamAccountBalance(walletAddress: string | undefined) {
         error: null,
         lastUpdated: null
     });
-    
+
     const eventSourceRef = useRef<EventSource | null>(null);
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const reconnectAttempts = useRef(0);
@@ -107,38 +115,38 @@ export function useStreamAccountBalance(walletAddress: string | undefined) {
                 eventSource.onmessage = (message) => {
                     const data = message.data ? JSON.parse(message.data) : message;
                     const result = data as AccountRecord;
-                    
+
                     if (result.balances) {
                         updateBalances(result.balances as WalletBalance[]);
                     }
                 };
 
                 eventSource.onerror = () => {
-                    setState(prev => ({ 
-                        ...prev, 
-                        isConnected: false, 
-                        error: "Connection lost" 
+                    setState(prev => ({
+                        ...prev,
+                        isConnected: false,
+                        error: "Connection lost"
                     }));
 
                     // Reconnection logic
                     if (reconnectAttempts.current < maxReconnectAttempts) {
                         const delay = reconnectDelay * Math.pow(2, reconnectAttempts.current);
                         reconnectAttempts.current++;
-                        
+
                         reconnectTimeoutRef.current = setTimeout(connect, delay);
                     } else {
-                        setState(prev => ({ 
-                            ...prev, 
-                            error: "Max reconnection attempts reached" 
+                        setState(prev => ({
+                            ...prev,
+                            error: "Max reconnection attempts reached"
                         }));
                     }
                 };
 
             } catch {
-                setState(prev => ({ 
-                    ...prev, 
+                setState(prev => ({
+                    ...prev,
                     error: "Failed to establish connection",
-                    isConnected: false 
+                    isConnected: false
                 }));
             }
         }
@@ -197,6 +205,9 @@ export function useStreamAccountBalance(walletAddress: string | undefined) {
     };
 }
 
+/**
+ * Hook for periodic Stellar account balance polling.
+ */
 export function useAccountBalancePolling(
     walletAddress: string | undefined,
     intervalMs: number = 10000
@@ -207,7 +218,7 @@ export function useAccountBalancePolling(
         error: null,
         lastUpdated: null
     });
-    
+
     const [isLoading, setIsLoading] = useState(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -218,15 +229,15 @@ export function useAccountBalancePolling(
         try {
             const baseUrl = HorizonAPI.getBaseUrl();
             const response = await fetch(`${baseUrl}/accounts/${walletAddress}`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
+
             const xlmBalance = parseFloat(
-                data.balances.find((balance: WalletBalance) => 
+                data.balances.find((balance: WalletBalance) =>
                     balance.asset_type === "native"
                 )?.balance || "0"
             ).toFixed(2);
@@ -273,6 +284,9 @@ export function useAccountBalancePolling(
     };
 }
 
+/**
+ * Hook for polling Stellar DEX order book to get XLM/USDC price.
+ */
 export function useXLMUSDCFromStellarDEX(intervalMs: number = 10000, pause: boolean = false) {
     const [priceData, setPriceData] = useState<PriceData>({
         xlmToUsdc: 0,
@@ -286,19 +300,19 @@ export function useXLMUSDCFromStellarDEX(intervalMs: number = 10000, pause: bool
         try {
             // Query Stellar DEX for XLM/USDC orderbook
             const response = await fetch(
-                "https://horizon.stellar.org/order_book?" + 
+                "https://horizon.stellar.org/order_book?" +
                 "selling_asset_type=native&" +
                 "buying_asset_type=credit_alphanum4&" +
                 "buying_asset_code=USDC&" +
                 `buying_asset_issuer=${process.env.NEXT_PUBLIC_STELLAR_USDC_ASSET_ID}`
             );
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
+
             // Get the best bid (highest price someone will pay for XLM in USDC)
             const bestBid = data.bids[0];
             if (bestBid) {
@@ -308,7 +322,7 @@ export function useXLMUSDCFromStellarDEX(intervalMs: number = 10000, pause: bool
                     lastUpdated: new Date()
                 });
             }
-            
+
             setError(null);
             setIsLoading(false);
         } catch (err) {
@@ -324,10 +338,10 @@ export function useXLMUSDCFromStellarDEX(intervalMs: number = 10000, pause: bool
             }
             return;
         }
-        
+
         fetchStellarDEXPrice();
         intervalRef.current = setInterval(fetchStellarDEXPrice, intervalMs);
-        
+
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);

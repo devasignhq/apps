@@ -149,7 +149,7 @@
 }
 
 body {
-  @apply bg-dark-500 h-[100dvh] w-screen overflow-hidden
+  @apply bg-dark-500 h-dvh w-screen overflow-hidden
 }
 
 /* Toast font customization */

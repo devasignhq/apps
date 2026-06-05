@@ -12,18 +12,39 @@ import { signInWithPopup, getAdditionalUserInfo } from "@firebase/auth";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 
+/**
+ * Authentication page for project maintainers.
+ *
+ * Uses Firebase's GitHub OAuth provider. After sign-in the page fetches
+ * the user from the DeVAsign API; if NOT_FOUND, it auto-creates the account.
+ *
+ * Post-auth routing depends on whether the maintainer has existing installations:
+ * - Has installations → tasks dashboard
+ * - No installations  → onboarding flow
+ *
+ * If an `installation_id` query param is present (i.e. the user just
+ * installed the GitHub App and was redirected here), it's preserved and
+ * forwarded to the installation creation page after auth completes.
+ */
+
 const Account = () => {
     const router = useAuthenticatedUserCheck();
     const { searchParams } = useCustomSearchParams();
     const installationId = searchParams.get("installation_id");
     const { setCurrentUser } = useUserStore();
 
+    /** If the user arrived via the GitHub App install callback, forward them to save the installation. */
     const getInstallation = () => {
         if (installationId) {
             router.push(`${ROUTES.INSTALLATION.CREATE}?installation_id=${installationId}`);
         }
     };
 
+    /**
+     * Auto-creates a new maintainer account. Triggered as a fallback
+     * from `getUser` when the API returns NOT_FOUND.
+     * New users always land on the onboarding page.
+     */
     const { loading: creatingUser, run: createUser } = useRequest(
         useLockFn((githubUsername: string) => UserAPI.createUser({ githubUsername })),
         {
@@ -47,6 +68,13 @@ const Account = () => {
         }
     );
 
+    /**
+     * Fetches the existing maintainer record. Uses `_count.installations`
+     * to decide whether to route to the tasks dashboard (has projects)
+     * or the onboarding flow (no projects yet).
+     *
+     * On NOT_FOUND, falls through to `createUser` to auto-register.
+     */
     const { loading: fetchingUser, run: getUser } = useRequest(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         useLockFn((githubUsername: string) => UserAPI.getUser()),
@@ -62,6 +90,7 @@ const Account = () => {
                 setCurrentUser({ ...response.data, username: params[0], email: user?.email });
                 getInstallation();
 
+                // Route based on whether the user has connected any repositories
                 if (response.data._count && response.data._count.installations > 0) {
                     router.push(ROUTES.TASKS);
                     return;
@@ -70,6 +99,7 @@ const Account = () => {
             },
             onError: (err, params) => {
                 const error = err as unknown as ErrorResponse;
+                // First-time user — auto-create their account
                 if (error.code === "NOT_FOUND") {
                     createUser(params[0]);
                     return;
@@ -79,6 +109,10 @@ const Account = () => {
         }
     );
 
+    /**
+     * Opens the GitHub OAuth popup and extracts the GitHub username
+     * from Firebase's additional user info to use as the API lookup key.
+     */
     const handleGitHubAuth = async () => {
         try {
             const result = await signInWithPopup(auth, githubProvider);

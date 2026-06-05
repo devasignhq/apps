@@ -4,6 +4,16 @@ import { useContext } from "react";
 import { ActiveTaskContext } from "../../../contexts/ActiveTaskContext";
 import MarkdownFormatter from "@/app/components/MarkdownFormatter";
 
+/**
+ * Read-only view of the GitHub issue associated with the active task.
+ *
+ * Renders the issue title, labels, URL, and body (as rendered Markdown).
+ * The body is passed through `MarkdownFormatter` which sanitises and
+ * renders GitHub-flavoured Markdown (fenced code blocks, tables, etc.).
+ * This view is shared across both the "Description" tab and the OPEN-only
+ * single-view mode.
+ */
+
 const DetailsView = () => {
     const { activeTask } = useContext(ActiveTaskContext);
     

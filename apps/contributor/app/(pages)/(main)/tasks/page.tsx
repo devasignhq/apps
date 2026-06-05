@@ -20,6 +20,23 @@ import { enumToStringConverter } from "@/app/utils/helper";
 import Tooltip from "@devasign/shared/components/Tooltip";
 import { socket } from "@/lib/socket";
 
+/**
+ * Primary task management dashboard for contributors.
+ *
+ * Layout: three-panel design —
+ *   1. Left sidebar:  Paginated task list with search/filter controls.
+ *   2. Middle panel:  Task overview (details, actions, updates).
+ *   3. Right panel:   Conversation thread with the project maintainer
+ *                     (only visible for tasks assigned to the current user).
+ *
+ * The active task is driven by the `taskId` URL search param so that
+ * task deep-links are shareable and browser back/forward works naturally.
+ *
+ * Real-time updates arrive via a Socket.IO room scoped to the contributor.
+ * When an `activity_update` event fires (e.g. task status change, new message),
+ * both the task list and the active task detail are refreshed automatically.
+ */
+
 const Tasks = () => {
     useUnauthenticatedUserCheck();
     const { currentUser } = useUserStore();
@@ -33,6 +50,14 @@ const Tasks = () => {
         return Object.values(taskFilters).some(Boolean);
     }, [taskFilters]);
 
+    /**
+     * Infinite-scrolling task list. Fetches paginated tasks from the API
+     * and automatically reloads when any filter value changes.
+     *
+     * On first page load, auto-selects the first task in the list if no
+     * taskId is already in the URL. If a filter makes the current task
+     * disappear from results, the first result becomes the new selection.
+     */
     const {
         data: tasks,
         loading: loadingTasks,
@@ -48,6 +73,8 @@ const Tasks = () => {
                 status: taskFilters.status
             };
 
+            // Only send the full filter set when repoUrl is present, since
+            // partial filters (issueTitle, status) are more common.
             if (taskFilters.repoUrl) {
                 filters = taskFilters;
             }
@@ -61,6 +88,8 @@ const Tasks = () => {
                 }
             );
 
+            // Auto-select the first task on initial load or when filters
+            // have pushed the currently-selected task out of the results.
             if (pageToLoad === 1 && response.data.length > 0) {
                 const isCurrentTaskInList = response.data.some(t => t.id === taskId);
                 if (!taskId && !activeTask) {
@@ -102,13 +131,19 @@ const Tasks = () => {
         }
     );
 
-    // Keep track of the active task in a ref
+    // Ref mirrors `activeTask` state so the socket handler below
+    // always reads the latest value without re-subscribing on every change.
     const activeTaskRef = useRef(activeTask);
     useEffect(() => {
         activeTaskRef.current = activeTask;
     }, [activeTask]);
 
-    // Listen to real-time updates from Firestore for the current user's activities
+    /**
+     * Real-time task updates via Socket.IO.
+     * Joins a room scoped to `contributor_<userId>` so the server only
+     * pushes events relevant to this contributor. On receiving an update,
+     * both the task list and active task detail are re-fetched to stay in sync.
+     */
     useEffect(() => {
         if (!currentUser) return;
 
@@ -333,6 +368,8 @@ const Tasks = () => {
                         {activeTask && (
                             <>
                                 <TaskOverviewSection />
+                                {/* Conversation panel is only shown for tasks actively assigned to this
+                                    contributor (not OPEN tasks or tasks assigned to someone else) */}
                                 {(activeTask.status !== "OPEN" && activeTask.contributorId === currentUser?.userId) &&
                                     <ConversationSection />
                                 }

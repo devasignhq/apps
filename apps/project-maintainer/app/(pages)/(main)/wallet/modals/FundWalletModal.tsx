@@ -8,6 +8,18 @@ import { moneyFormat } from "@/app/utils/helper";
 import { useXLMUSDCFromStellarDEX } from "@/app/services/horizon.service";
 import { LiaExchangeAltSolid } from "react-icons/lia";
 
+/**
+ * XLM deposit modal — shows the installation's Stellar wallet address
+ * as both a QR code and a copyable string.
+ *
+ * When `displayTopUpAmount` is provided (e.g. from the CreateTaskModal),
+ * it fetches the live XLM/USDC exchange rate from the Stellar DEX and
+ * calculates the exact XLM amount the maintainer needs to deposit to
+ * cover the total bounties minus their existing XLM balance.
+ *
+ * Important: Only XLM deposits are supported. Any other asset sent to
+ * this address will be permanently lost.
+ */
 type FundWalletModalProps = {
     toggleModal: () => void;
     displayTopUpAmount?: {

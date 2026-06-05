@@ -18,6 +18,18 @@ import { RiCodeBoxLine } from "react-icons/ri";
 import { TbProgress } from "react-icons/tb";
 import { toast } from "react-toastify";
 
+/**
+ * Public-facing bounty details & application page.
+ *
+ * This page is shareable via a deep-link containing `?taskId=<id>` in the URL.
+ * It does NOT require authentication to view — unauthenticated users see the bounty
+ * details and are redirected to the auth page (with the taskId preserved) when they
+ * click "Apply". Authenticated users can apply directly.
+ *
+ * Once the application is submitted, the contributor waits for the project maintainer
+ * to accept or reject it. If accepted, the task gets assigned exclusively to them.
+ */
+
 const Application = () => {
     const router = useRouter();
     const { currentUser } = useUserStore();
@@ -28,6 +40,8 @@ const Application = () => {
     const [submittingApplication, setSubmittingApplication] = useState(false);
     const [openRequestResponseModal, { toggle: toggleRequestResponseModal }] = useToggle(false);
 
+    // Fetch the task by its public ID from the URL query string.
+    // `useLockFn` prevents concurrent fetches if taskId changes rapidly.
     useAsyncEffect(useLockFn(async () => {
         if (!taskId) {
             setActiveTask(null);
@@ -45,6 +59,11 @@ const Application = () => {
         }
     }), [taskId]);
 
+    /**
+     * Guards auth state before submitting. If the user isn't logged in,
+     * they're redirected to /authenticate with the taskId preserved so
+     * the post-login flow can bring them back here.
+     */
     const handleTaskApplication = async () => {
         const user = await getCurrentUser();
         if (!user) {
@@ -111,7 +130,7 @@ const Application = () => {
                                 <span className="text-light-200 font-bold">{formatDate(activeTask.createdAt)}</span>
                             </p>
                         </div>
-                        <div className="w-full h-[1px] bg-dark-200 my-[30px]" />
+                        <div className="w-full h-px bg-dark-200 my-[30px]" />
                         <div className="space-y-5 mb-[30px]">
                             <div className="space-y-2.5">
                                 {activeTask.issue.labels?.length > 0 && (
@@ -129,6 +148,11 @@ const Application = () => {
                                 <h5 className="text-headline-small text-light-100 line-clamp-4">{activeTask.issue.title}</h5>
                             </div>
 
+                            {/* 
+                                Branching based on whether the bounty is still open for applications:
+                                - No contributorId → show bounty details + escrow proof link on Stellar Explorer
+                                - contributorId exists → task is already assigned, show appropriate message
+                            */}
                             {!activeTask.contributorId ? (
                                 <>
                                     <p className="text-body-medium text-light-200 line-clamp-6">
@@ -139,10 +163,12 @@ const Application = () => {
                                         <span className="text-display-large">{moneyFormat(activeTask.bounty).split(".")[0]}</span>
                                         <span className="text-headline-large">.{activeTask.bounty.toString().split(".")[1] || "00"} USDC</span>
                                     </p>
+                                    {/* Link to the on-chain escrow creation tx so contributors can verify
+                                        that the bounty funds are actually locked before applying */}
                                     {activeTask.escrowTransactions.find(tx => tx.method === "creation") && (
                                         <div className="text-table-content flex items-center gap-[5px]">
                                             <p className="font-bold text-light-100">Bounty Escrow:{" "}</p>
-                                            <Link 
+                                            <Link
                                                 href={`${isMainnet
                                                     ? "https://stellar.expert/explorer/public/tx/"
                                                     : "https://stellar.expert/explorer/testnet/tx/"}` +

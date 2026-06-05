@@ -12,13 +12,27 @@ import { TaskAPI } from "@/app/services/task.service";
 import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 import { useGetInstallationRepositories } from "@/app/utils/hooks";
-import { GetRepositoryResourcesResponse } from "@/app/models/github.model";
+import { GetRepositoryResourcesResponse } from "@devasign/shared/models/github.model";
 import SearchBox from "../components/SearchBox";
 import { ApiResponse } from "@devasign/shared/models/_global";
 import { enumToStringConverter } from "@/app/utils/helper";
 import { InstallationAPI } from "@/app/services/installation.service";
 import Tooltip from "@devasign/shared/components/Tooltip";
 import { socket, joinSocketRoom, leaveSocketRoom } from "@/lib/socket";
+
+/**
+ * Left sidebar panel — paginated, filterable task list.
+ *
+ * Features:
+ * - Infinite scroll with `useInfiniteScroll` (scroll container = `listRef`).
+ * - Three-tier filtering: status, repo name, and issue labels. Selecting a
+ *   repo lazily fetches its labels from the GitHub API (cached by URL).
+ * - Text search by issue title (minimum 3 chars).
+ * - Auto-selects the first task on initial load when no `taskId` is in the URL.
+ * - Resets all filters and reloads when the active installation changes.
+ * - Listens to an `installation_<id>` socket room for `task_completed`
+ *   events to auto-refresh the list when bounties are paid out.
+ */
 
 // ? Restrict filtering when task list is <= 10
 const TaskListSection = () => {
@@ -92,6 +106,7 @@ const TaskListSection = () => {
         {
             target: listRef,
             isNoMore: (response) => !response?.hasMore,
+            // Any filter change or installation switch triggers a full reload
             reloadDeps: [activeInstallation?.id, ...Object.values(taskFilters)]
         }
     );
@@ -103,6 +118,8 @@ const TaskListSection = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refresh]);
 
+    // When the user switches installations from the header dropdown,
+    // clear all task filters and reload so the list reflects the new context.
     useEffect(() => {
         if (installationChange === "true") {
             setTaskFilters(defaultTaskFilters);
@@ -137,6 +154,9 @@ const TaskListSection = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [taskFilters.repoUrl]);
 
+    // Listen for server-side `task_completed` events on the installation
+    // socket room. This handles the case where a bounty is paid out (either
+    // via PR merge webhook or manual approval), which changes the task status.
     useEffect(() => {
         if (!activeInstallation) return;
 

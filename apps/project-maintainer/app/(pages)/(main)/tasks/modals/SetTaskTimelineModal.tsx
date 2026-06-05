@@ -9,6 +9,23 @@ import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 import { TaskAPI } from "@/app/services/task.service";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 
+/**
+ * Timeline editor modal — sets or updates the completion deadline for a task.
+ *
+ * The timeline is stored in the API as total days. This modal presents a
+ * user-friendly input (number + unit dropdown) and converts back before
+ * submission:
+ *   - Week(s) → value × 7 days
+ *   - Day(s)  → value as-is
+ *
+ * Editing is locked once the task has been delegated (enforced by the
+ * parent component), since changing the deadline mid-work would be unfair
+ * to the contributor.
+ *
+ * `inValidForm` memoises a check to prevent no-op submissions when the
+ * value hasn't changed from the current timeline.
+ */
+
 type SetTaskTimelineModalProps = {
     toggleModal: () => void;
 };
@@ -112,6 +129,8 @@ const SetTaskTimelineModal = ({ toggleModal }: SetTaskTimelineModalProps) => {
 
 export default SetTaskTimelineModal;
 
+/** Converts the stored day-based timeline back to its display value.
+ *  If divisible by 7, shows as weeks; otherwise shows as days. */
 function getTimeline(timeline: number) {
     const value = timeline % 7 === 0
         ? timeline / 7
@@ -119,6 +138,7 @@ function getTimeline(timeline: number) {
     return value;
 }
 
+/** Infers the display unit (WEEK or DAY) from the stored day count. */
 function getTimelineType(timeline: number) {
     const value = timeline % 7 === 0
         ? "WEEK"

@@ -20,6 +20,9 @@ type RegularDropdownProps = {
     fieldValue: string;
 })
 
+/**
+ * Dropdown component for selecting a single item from a list of options.
+ */
 const RegularDropdown = ({
     defaultName,
     options,
@@ -57,6 +60,7 @@ const RegularDropdown = ({
                 <span>{title || selectedItem}</span>
                 <IoMdArrowDropdown className={`text-2xl ${openMenu && "rotate-180"}`} />
             </button>
+            
             {openMenu && (
                 <div
                     ref={menuRef}

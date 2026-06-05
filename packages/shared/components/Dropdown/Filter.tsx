@@ -24,6 +24,10 @@ type FilterDropdownProps = {
     fieldValue: string;
 })
 
+/**
+ * Dropdown component for filtering data based on selected options.
+ * Supports both single and multi-select modes.
+ */
 const FilterDropdown = ({
     title,
     options,
@@ -144,6 +148,7 @@ const FilterDropdown = ({
                 <span>{title}</span>
                 <IoMdArrowDropdown className={`text-2xl ${openMenu && "rotate-180"}`} />
             </button>
+
             {openMenu && (
                 <div
                     ref={menuRef}
@@ -164,6 +169,7 @@ const FilterDropdown = ({
                             Clear Selection
                         </button>
                     </div>
+
                     <ul className="flex flex-col gap-3 list-none items-start">
                         {options.length === 0 ?
                             <li className="text-light-100">No options available</li>
@@ -191,6 +197,7 @@ const FilterDropdown = ({
                             </li>
                         ))}
                     </ul>
+                    
                     <div className="w-full pt-3 pb-[15px] bg-dark-400 sticky bottom-0">
                         <button
                             type="button"

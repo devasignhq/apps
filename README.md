@@ -133,7 +133,7 @@ Each app requires its own `.env.local` file.
 1. Copy the example environment files:
 ```bash
 cp apps/contributor/.env.example apps/contributor/.env.local
-cp apps/pm/.env.example apps/pm/.env.local
+cp apps/project-maintainer/.env.example apps/project-maintainer/.env.local
 ```
 
 2. Configure each `.env.local` file with the following variables:
