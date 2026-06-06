@@ -1,6 +1,6 @@
 "use client";
-import { getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
-import { ROUTES } from "@/app/utils/data";
+import { auth, getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
+import { ALLOWED_IDES, ROUTES } from "@/app/utils/data";
 import { useAsyncEffect, useLockFn } from "ahooks";
 import { InstallationAPI } from "@/app/services/installation.service";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
@@ -29,12 +29,11 @@ import { useCustomSearchParams } from "@devasign/shared/hooks";
 type ReboundAction = "INSTALL" | "RETRY" | "";
 
 const Installation = () => {
-    const router = useUnauthenticatedUserCheck();;
+    const router = useUnauthenticatedUserCheck();
     const { searchParams } = useCustomSearchParams();
     const installationId = searchParams.get("installation_id");
     const [isProcessing, setIsProcessing] = useState(true);
     const [reboundAction, setReboundAction] = useState<ReboundAction>("");
-
     const {
         activeInstallation,
         installationList,
@@ -42,6 +41,43 @@ const Installation = () => {
         setInstallationList
     } = useInstallationStore();
 
+    /**
+     * Handles the redirect to the extension after installation.
+     */
+    const handleExtensionRedirect = async () => {
+        const extensionAuthStr = localStorage.getItem("extensionAuth");
+        if (!extensionAuthStr) {
+            return false;
+        }
+
+        try {
+            const extAuth = JSON.parse(extensionAuthStr);
+
+            // Allowlist of supported IDE URL schemes to prevent arbitrary-scheme injection.
+            if (typeof extAuth?.ide !== "string" || !ALLOWED_IDES.includes(extAuth.ide)) {
+                localStorage.removeItem("extensionAuth");
+                return false;
+            }
+
+            const refreshToken = auth.currentUser?.refreshToken;
+            if (!refreshToken) {
+                return false;
+            }
+
+            const ideLink = `${extAuth.ide}://devasign.devasign/auth?refreshToken=${encodeURIComponent(refreshToken)}`;
+
+            localStorage.removeItem("extensionAuth");
+            localStorage.setItem("ideLink", ideLink);
+            router.push(ROUTES.EXTENSION_SUCCESS);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    /**
+     * Save installation data to database
+     */
     const saveInstallation = async () => {
         setIsProcessing(true);
         const user = await getCurrentUser();
@@ -63,6 +99,12 @@ const Installation = () => {
         if (existingInstallation) {
             setActiveInstallation(existingInstallation);
             toast.info("Installation already exists.");
+            
+            // If the user arrived from the extension, construct a deep link to return them
+            // to their IDE with their updated authentication and installation data.
+            const redirected = await handleExtensionRedirect();
+            if (redirected) return;
+
             router.push(ROUTES.TASKS);
             return;
         }
@@ -77,6 +119,11 @@ const Installation = () => {
             setActiveInstallation(response.data);
             setInstallationList([...installationList, response.data]);
             handleApiSuccessResponse(response);
+
+            // If the user arrived from the extension, construct a deep link to return them
+            // to their IDE with their updated authentication and installation data.
+            const redirected = await handleExtensionRedirect();
+            if (redirected) return;
 
             if (noCurrentInstallations) {
                 router.push(ROUTES.ONBOARDING);
@@ -97,7 +144,7 @@ const Installation = () => {
     useAsyncEffect(useLockFn(() => saveInstallation()), [router, installationId]);
 
     return (isProcessing || reboundAction === "") ? (
-        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+        <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
             <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                 <TbProgress className="text-[44px] text-primary-400 mx-auto rotate-loading-slower" />
                 <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Saving Installation</h2>
@@ -107,7 +154,7 @@ const Installation = () => {
             </div>
         </div>
     ) : (
-        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+        <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
             <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                 <MdOutlineCancel className="text-[44px] text-indicator-500 mx-auto" />
                 <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Process Failed</h2>
