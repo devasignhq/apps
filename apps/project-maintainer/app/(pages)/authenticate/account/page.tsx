@@ -43,19 +43,17 @@ const Account = () => {
         const source = searchParams.get("source");
         const ide = searchParams.get("ide");
         const shouldRedirectToExtension = source === "extension" && ide;
-        let toastId;
 
         if (shouldRedirectToExtension) {
             localStorage.setItem("extensionAuth", JSON.stringify({ source, ide }));
-
-            if (user) {
-                toastId = toast.loading("Authenticating...");
-                setIsAuthenticatingExtension(true);
-            }
         }
 
         if (!user || !currentUser) {
-            if (toastId) toast.dismiss(toastId);
+            return;
+        }
+
+        if (installationId) {
+            router.push(`${ROUTES.INSTALLATION.CREATE}?installation_id=${installationId}`);
             return;
         }
 
@@ -63,25 +61,27 @@ const Account = () => {
         // check if they came from the extension to redirect them back, otherwise route to the tasks dashboard.
         if ((currentUser?._count && currentUser._count.installations > 0) || installationList.length > 0) {
             if (shouldRedirectToExtension) {
+                setIsAuthenticatingExtension(true);
+                const toastId = toast.loading("Authenticating...");
                 const redirected = await handleExtensionRedirect();
 
                 if (!redirected) {
-                    toast.update(toastId!, {
+                    toast.update(toastId, {
                         render: "Authentication unsuccessful!",
                         autoClose: 1000,
                         type: "error",
                         isLoading: false
                     });
                     router.push(ROUTES.TASKS);
-                    return;
+                } else {
+                    toast.update(toastId, {
+                        render: "Authentication successful!",
+                        autoClose: 1000,
+                        type: "info",
+                        isLoading: false
+                    });
                 }
-
-                toast.update(toastId!, {
-                    render: "Authentication successful!",
-                    autoClose: 1000,
-                    type: "info",
-                    isLoading: false
-                });
+                setIsAuthenticatingExtension(false);
                 return;
             }
             router.push(ROUTES.TASKS);
