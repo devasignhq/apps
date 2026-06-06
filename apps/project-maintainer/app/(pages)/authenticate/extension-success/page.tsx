@@ -13,6 +13,7 @@ const ExtensionSuccessPage = () => {
         const link = localStorage.getItem("ideLink");
         if (link) {
             setIdeLink(link);
+            localStorage.removeItem("ideLink");
             window.location.href = link;
         } else {
             router.push(ROUTES.ACCOUNT);

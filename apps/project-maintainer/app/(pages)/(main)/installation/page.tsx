@@ -1,6 +1,6 @@
 "use client";
 import { auth, getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
-import { ROUTES } from "@/app/utils/data";
+import { ALLOWED_IDES, ROUTES } from "@/app/utils/data";
 import { useAsyncEffect, useLockFn } from "ahooks";
 import { InstallationAPI } from "@/app/services/installation.service";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
@@ -53,6 +53,12 @@ const Installation = () => {
         try {
             const extAuth = JSON.parse(extensionAuthStr);
 
+            // Allowlist of supported IDE URL schemes to prevent arbitrary-scheme injection.
+            if (typeof extAuth?.ide !== "string" || !ALLOWED_IDES.includes(extAuth.ide)) {
+                localStorage.removeItem("extensionAuth");
+                return false;
+            }
+
             const refreshToken = auth.currentUser?.refreshToken;
             if (!refreshToken) {
                 return false;
@@ -70,8 +76,7 @@ const Installation = () => {
     };
 
     /**
-     * 
-     * @returns 
+     * Save installation data to database
      */
     const saveInstallation = async () => {
         setIsProcessing(true);

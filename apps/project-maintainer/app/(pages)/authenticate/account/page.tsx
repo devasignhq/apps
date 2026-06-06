@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
-import { ROUTES } from "@/app/utils/data";
+import { ALLOWED_IDES, ROUTES } from "@/app/utils/data";
 import { FaGithub } from "react-icons/fa";
 import { UserAPI } from "@/app/services/user.service";
 import { useAsyncEffect, useLockFn, useRequest } from "ahooks";
@@ -110,6 +110,12 @@ const Account = () => {
 
         try {
             const extAuth = JSON.parse(extensionAuthStr);
+
+            // Allowlist of supported IDE URL schemes to prevent arbitrary-scheme injection.
+            if (typeof extAuth?.ide !== "string" || !ALLOWED_IDES.includes(extAuth.ide)) {
+                localStorage.removeItem("extensionAuth");
+                return false;
+            }
 
             const refreshToken = auth.currentUser?.refreshToken;
             if (!refreshToken) {
