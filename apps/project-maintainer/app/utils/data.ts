@@ -29,10 +29,13 @@ export const FEATURE_GATES = {
 export const ALLOWED_IDES = [
     "vscode", // Visual Studio Code
     "vscode-insiders", // VS Code Insiders
+    "code-oss", // VS Code Open Source
     "vscodium", // VSCodium (open-source VS Code build)
     "cursor", // Cursor
     "windsurf", // Windsurf (Codeium)
-    "antigravity", // Google Antigravity
+    "kiro", // Kiro
+    "antigravity-ide", // Google Antigravity
     "trae", // Trae (ByteDance)
-    "positron" // Positron (Posit)
+    "positron", // Positron (Posit)
+    "pearai" // PearAI
 ];
