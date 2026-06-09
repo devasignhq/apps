@@ -7,6 +7,18 @@ import { TbBrowser, TbLogout } from "react-icons/tb";
 import { useLogoutUser } from "@/lib/firebase";
 import useUserStore from "@/app/state-management/useUserStore";
 
+/**
+ * Persistent layout shell for all authenticated (main) pages.
+ *
+ * Responsibilities:
+ * - Renders the top bar with the logo and the current user's GitHub username.
+ * - Conditionally shows the primary navigation tabs. The nav is hidden on
+ *   standalone pages (Application, Complete-KYC) that have their own back-flow.
+ * - Enforces desktop-only access: on tablet/mobile viewports the entire child
+ *   content is replaced by a "Switch to Desktop" prompt, using CSS-driven
+ *   `desktop-only` / `mobile-tablet-only` utility classes.
+ */
+
 export default function MainLayout({
     children
 }: Readonly<{
@@ -15,6 +27,7 @@ export default function MainLayout({
     const { currentUser } = useUserStore();
     const logoutUser = useLogoutUser();
     const currentPath = usePathname();
+    /** Checks if the given path is part of or matches the current route (for active tab styling). */
     const checkPath = (path: string) => currentPath.includes(path) || currentPath === path;
 
     return (
@@ -30,6 +43,7 @@ export default function MainLayout({
                     </button>
                 </div>
             </section>
+            {/* Hide the main nav on pages that exist outside the tab-based navigation flow */}
             {(!currentPath.includes(ROUTES.APPLICATION) && !currentPath.includes(ROUTES.COMPLETE_KYC)) && (
                 <nav className="w-full flex items-center gap-[15px] border-b border-dark-200 text-title-large text-dark-200 mt-[15px]">
                     {navItems.map((item) => (

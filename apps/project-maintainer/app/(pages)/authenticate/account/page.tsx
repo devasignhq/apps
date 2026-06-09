@@ -1,29 +1,143 @@
 "use client";
+import { useState } from "react";
 import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
-import { ROUTES } from "@/app/utils/data";
+import { ALLOWED_IDES, ROUTES } from "@/app/utils/data";
 import { FaGithub } from "react-icons/fa";
 import { UserAPI } from "@/app/services/user.service";
-import { useLockFn, useRequest } from "ahooks";
+import { useAsyncEffect, useLockFn, useRequest } from "ahooks";
 import { toast } from "react-toastify";
 import { ErrorResponse } from "@devasign/shared/models/_global";
 import useUserStore from "@/app/state-management/useUserStore";
-import { auth, getCurrentUser, githubProvider, useAuthenticatedUserCheck } from "@/lib/firebase";
+import { auth, getCurrentUser, githubProvider } from "@/lib/firebase";
 import { signInWithPopup, getAdditionalUserInfo } from "@firebase/auth";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
+import { useRouter } from "next/navigation";
+import useInstallationStore from "@/app/state-management/useInstallationStore";
+
+/**
+ * Authentication page for project maintainers.
+ *
+ * Uses Firebase's GitHub OAuth provider. After sign-in the page fetches
+ * the user from the DeVAsign API; if NOT_FOUND, it auto-creates the account.
+ *
+ * Post-auth routing depends on whether the maintainer has existing installations:
+ * - Has installations → tasks dashboard
+ * - No installations  → onboarding flow
+ *
+ * If an `installation_id` query param is present (i.e. the user just
+ * installed the GitHub App and was redirected here), it's preserved and
+ * forwarded to the installation creation page after auth completes.
+ */
 
 const Account = () => {
-    const router = useAuthenticatedUserCheck();
+    const router = useRouter();
     const { searchParams } = useCustomSearchParams();
     const installationId = searchParams.get("installation_id");
-    const { setCurrentUser } = useUserStore();
+    const { currentUser, setCurrentUser } = useUserStore();
+    const { installationList } = useInstallationStore();
+    const [isAuthenticatingExtension, setIsAuthenticatingExtension] = useState(false);
 
+    useAsyncEffect(async () => {
+        const user = await getCurrentUser();
+        const source = searchParams.get("source");
+        const ide = searchParams.get("ide");
+        const shouldRedirectToExtension = source === "extension" && ide;
+
+        if (shouldRedirectToExtension) {
+            localStorage.setItem("extensionAuth", JSON.stringify({ source, ide }));
+        }
+
+        if (!user || !currentUser) {
+            return;
+        }
+
+        if (installationId) {
+            router.push(`${ROUTES.INSTALLATION.CREATE}?installation_id=${installationId}`);
+            return;
+        }
+
+        // If the user has already connected their GitHub account and has active installations, 
+        // check if they came from the extension to redirect them back, otherwise route to the tasks dashboard.
+        if ((currentUser?._count && currentUser._count.installations > 0) || installationList.length > 0) {
+            if (shouldRedirectToExtension) {
+                setIsAuthenticatingExtension(true);
+                const toastId = toast.loading("Authenticating...");
+                const redirected = await handleExtensionRedirect();
+
+                if (!redirected) {
+                    toast.update(toastId, {
+                        render: "Authentication unsuccessful!",
+                        autoClose: 1000,
+                        type: "error",
+                        isLoading: false
+                    });
+                    router.push(ROUTES.TASKS);
+                } else {
+                    toast.update(toastId, {
+                        render: "Authentication successful!",
+                        autoClose: 1000,
+                        type: "info",
+                        isLoading: false
+                    });
+                }
+                setIsAuthenticatingExtension(false);
+                return;
+            }
+            router.push(ROUTES.TASKS);
+        } else {
+            router.push(ROUTES.ONBOARDING);
+        }
+    }, [searchParams, currentUser]);
+
+    /** 
+     * If the user arrived via the GitHub App install callback, forward them to save the installation. 
+     */
     const getInstallation = () => {
         if (installationId) {
             router.push(`${ROUTES.INSTALLATION.CREATE}?installation_id=${installationId}`);
         }
     };
 
+    /**
+     * Handles the redirect to the extension after authentication.
+     */
+    const handleExtensionRedirect = async () => {
+        const extensionAuthStr = localStorage.getItem("extensionAuth");
+        if (!extensionAuthStr) {
+            return false;
+        }
+
+        try {
+            const extAuth = JSON.parse(extensionAuthStr);
+
+            // Allowlist of supported IDE URL schemes to prevent arbitrary-scheme injection.
+            if (typeof extAuth?.ide !== "string" || !ALLOWED_IDES.includes(extAuth.ide)) {
+                localStorage.removeItem("extensionAuth");
+                return false;
+            }
+
+            const refreshToken = auth.currentUser?.refreshToken;
+            if (!refreshToken) {
+                return false;
+            }
+
+            const ideLink = `${extAuth.ide}://devasign.devasign/auth?refreshToken=${encodeURIComponent(refreshToken)}`;
+
+            localStorage.removeItem("extensionAuth");
+            localStorage.setItem("ideLink", ideLink);
+            router.push(ROUTES.EXTENSION_SUCCESS);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    /**
+     * Auto-creates a new maintainer account. Triggered as a fallback
+     * from `getUser` when the API returns NOT_FOUND.
+     * New users always land on the onboarding page.
+     */
     const { loading: creatingUser, run: createUser } = useRequest(
         useLockFn((githubUsername: string) => UserAPI.createUser({ githubUsername })),
         {
@@ -47,6 +161,13 @@ const Account = () => {
         }
     );
 
+    /**
+     * Fetches the existing maintainer record. Uses `_count.installations`
+     * to decide whether to route to the tasks dashboard (has projects)
+     * or the onboarding flow (no projects yet).
+     *
+     * On NOT_FOUND, falls through to `createUser` to auto-register.
+     */
     const { loading: fetchingUser, run: getUser } = useRequest(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         useLockFn((githubUsername: string) => UserAPI.getUser()),
@@ -62,14 +183,19 @@ const Account = () => {
                 setCurrentUser({ ...response.data, username: params[0], email: user?.email });
                 getInstallation();
 
+                // Route based on whether the user has connected any repositories
                 if (response.data._count && response.data._count.installations > 0) {
-                    router.push(ROUTES.TASKS);
+                    const redirected = await handleExtensionRedirect();
+                    if (!redirected) {
+                        router.push(ROUTES.TASKS);
+                    }
                     return;
                 }
                 router.push(ROUTES.ONBOARDING);
             },
             onError: (err, params) => {
                 const error = err as unknown as ErrorResponse;
+                // First-time user — auto-create their account
                 if (error.code === "NOT_FOUND") {
                     createUser(params[0]);
                     return;
@@ -79,6 +205,10 @@ const Account = () => {
         }
     );
 
+    /**
+     * Opens the GitHub OAuth popup and extracts the GitHub username
+     * from Firebase's additional user info to use as the API lookup key.
+     */
     const handleGitHubAuth = async () => {
         try {
             const result = await signInWithPopup(auth, githubProvider);
@@ -107,12 +237,14 @@ const Account = () => {
                         ? "Saving User..."
                         : fetchingUser
                             ? "Loading User..."
-                            : "Continue with GitHub"
+                            : isAuthenticatingExtension
+                                ? "Authenticating..."
+                                : "Continue with GitHub"
                 }
                 sideItem={<FaGithub />}
                 attributes={{
                     onClick: handleGitHubAuth,
-                    disabled: creatingUser || fetchingUser
+                    disabled: creatingUser || fetchingUser || isAuthenticatingExtension
                 }}
                 extendedClassName="w-[264px]"
             />

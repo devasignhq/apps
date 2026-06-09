@@ -12,6 +12,20 @@ import { toast } from "react-toastify";
 import RegularDropdown from "@devasign/shared/components/Dropdown/Regular";
 import Tooltip from "@devasign/shared/components/Tooltip";
 
+/**
+ * Asset withdrawal modal — sends XLM or USDC to an external Stellar address.
+ *
+ * Flow:
+ *   1. User selects asset type (XLM or USDC) and enters amount.
+ *   2. Client-side balance guard prevents over-withdrawal before the API call.
+ *   3. Amount is sanitised (commas stripped) before submission.
+ *   4. On success, triggers a three-step refresh chain:
+ *      `reloadTransactions` → `manualBalanceCheck` → close modal.
+ *
+ * The memo field is optional but critical: some exchanges/wallets require
+ * a memo to credit the correct account. The tooltip warns the user that
+ * omitting a required memo may result in permanent fund loss.
+ */
 const withdrawAssetSchema = object({
     assetType: string().oneOf(["XLM", "USDC"]).required("Required"),
     amount: string().required("Required"),

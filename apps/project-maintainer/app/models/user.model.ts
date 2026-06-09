@@ -1,4 +1,4 @@
-import { BalanceLineAsset } from "./horizon.model";
+import { BalanceLineAsset } from "@devasign/shared/models/horizon.model";
 import { UserInstallationPermissionDto } from "./permission.model";
 import { InstallationDto } from "./installation.model";
 import { TaskDto, TaskSubmission } from "./task.model";

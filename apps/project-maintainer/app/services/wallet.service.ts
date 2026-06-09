@@ -1,6 +1,6 @@
 import { HttpClient } from "@devasign/shared/lib/axiosInstance";
 import { ENDPOINTS } from "./_endpoints";
-import { AccountRecord } from "../models/horizon.model";
+import { AccountRecord } from "@devasign/shared/models/horizon.model";
 import {
     SwapAssetDto,
     QueryTransactionDto,

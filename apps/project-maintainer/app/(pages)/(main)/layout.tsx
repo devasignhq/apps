@@ -16,6 +16,20 @@ import { FiSettings } from "react-icons/fi";
 import { openInNewTab } from "@/app/utils/helper";
 import { toast } from "react-toastify";
 
+/**
+ * Persistent layout shell for all authenticated project-maintainer pages.
+ *
+ * Responsibilities:
+ * - Renders the top bar with logo, active installation name, and a dropdown
+ *   switcher for multi-installation accounts (e.g. personal + org installs).
+ * - Auto-fetches the full installation list on mount (with retry + cache).
+ *   When switching installations, writes `installationChange=true` to the URL
+ *   so child pages can detect the change and reload their data.
+ * - Conditionally hides the nav tabs on the onboarding page, which has its
+ *   own standalone flow.
+ * - Enforces desktop-only access on tablet/mobile viewports.
+ */
+
 export default function MainLayout({
     children
 }: Readonly<{
@@ -33,6 +47,11 @@ export default function MainLayout({
         setActiveInstallation
     } = useInstallationStore();
 
+    /**
+     * Fetches all GitHub App installations for the current user.
+     * On first load, defaults to the first installation. On subsequent loads,
+     * re-selects the previously active installation (by ID) to preserve context.
+     */
     const { loading: fetchingInstallations } = useRequest(
         () => InstallationAPI.getInstallations(),
         {
@@ -48,6 +67,7 @@ export default function MainLayout({
                 if (!activeInstallation) {
                     setActiveInstallation(response.data[0]);
                 } else {
+                    // Re-select the same installation with fresh data
                     const mostRecentData = response.data.find(ins => ins.id === activeInstallation.id);
                     setActiveInstallation(mostRecentData!);
                 }
@@ -108,6 +128,9 @@ export default function MainLayout({
                                                     <button
                                                         key={installation.id}
                                                         className="group flex items-center justify-between gap-2.5"
+                                                        /* Switching installations injects `installationChange=true`
+                                                           into the URL. Child pages watch for this param to reload
+                                                           their task lists, transactions, etc. for the new context. */
                                                         onClick={() => {
                                                             setActiveInstallation(installation);
                                                             updateSearchParams({ installationChange: true }, true);
@@ -152,6 +175,7 @@ export default function MainLayout({
                     </button>
                 </div>
             </section>
+            {/* Hide the main nav during the onboarding flow, which has its own standalone UI */}
             {!currentPath.includes(ROUTES.ONBOARDING) && (<>
                 <nav className="w-full flex items-center gap-[15px] text-title-large text-dark-200 mt-[15px]">
                     {navItems.map((item) => (

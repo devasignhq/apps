@@ -10,13 +10,30 @@ import useUserStore from "@/app/state-management/useUserStore";
 import { useStreamAccountBalance } from "@/app/services/horizon.service";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
 import useTaskStore from "@/app/state-management/useTaskStore";
-import { moneyFormat, openInNewTab } from "@/app/utils/helper";
+import { moneyFormat } from "@/app/utils/helper";
 import { ROUTES } from "@/app/utils/data";
 import { useEffect } from "react";
 import { useGetInstallationRepositories } from "@/app/utils/hooks";
 import { useUnauthenticatedUserCheck } from "@/lib/firebase";
 import Link from "next/link";
 import Tooltip from "@devasign/shared/components/Tooltip";
+
+/**
+ * First-run onboarding wizard for new project maintainers.
+ *
+ * Guides users through a sequential setup:
+ *   1. Connect Project Repository — prompts to install the DeVAsign
+ *      GitHub App if no installation exists yet.
+ *   2. Fund Wallet — once an installation is connected, shows live
+ *      USDC/XLM balances and a "Top Up" button.
+ *   3. Create First Bounty — shown as a draft bar with a count of
+ *      selected issues. "Create Bounty" is only enabled when the wallet
+ *      has a positive USDC balance AND the installation is active.
+ *
+ * The balance is polled every 10 seconds (via `manualBalanceCheck`) because
+ * the Horizon SSE stream can be unreliable during the initial top-up window
+ * when the Stellar account may not have been fully funded yet.
+ */
 
 const Onboarding = () => {
     const router = useUnauthenticatedUserCheck();
@@ -39,6 +56,8 @@ const Onboarding = () => {
         loading: loadingInstallationRepos
     } = useGetInstallationRepositories();
 
+    // Poll balance on a 10s interval as a fallback for Horizon SSE,
+    // which can miss the first account-creation event for new wallets.
     useEffect(() => {
         const interval = setInterval(() => {
             manualBalanceCheck();
@@ -67,7 +86,7 @@ const Onboarding = () => {
                                 text="Install in GitHub"
                                 sideItem={<FiArrowUpRight />}
                                 attributes={{
-                                    onClick: () => openInNewTab(ROUTES.INSTALLATION.NEW)
+                                    onClick: () => window.location.href = ROUTES.INSTALLATION.NEW
                                 }}
                                 extendedClassName="bg-light-200 hover:bg-light-100"
                             />
@@ -109,6 +128,8 @@ const Onboarding = () => {
                             </span>
                         </p>
                         <div className="flex items-center gap-[30px]">
+                            {/* "Create Bounty" is gated behind positive USDC balance to prevent
+                                creating bounties the wallet can't cover */}
                             {Number(usdcBalance) > 0 && (
                                 <Tooltip
                                     message="Reinstall or unsuspend DevAsign app on GitHub to create new tasks"
@@ -135,7 +156,7 @@ const Onboarding = () => {
                     </div>
                 ) : (
                     <div className="w-full p-10 border border-primary-200 flex items-center justify-between gap-10 
-                        bg-[linear-gradient(130.86deg,_rgba(0,_26,_37,_0.5)_15.53%,_rgba(163,_82,_7,_0.5)_79.38%)]"
+                        bg-[linear-gradient(130.86deg,rgba(0,26,37,0.5)_15.53%,rgba(163,82,7,0.5)_79.38%)]"
                     >
                         <div className="flex items-center gap-[5px]">
                             <Image

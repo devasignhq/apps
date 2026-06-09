@@ -3,6 +3,18 @@ import { twMerge } from "tailwind-merge";
 import { FiSearch } from "react-icons/fi";
 import { MdCancel } from "react-icons/md";
 
+/**
+ * Search input with a toggling action icon.
+ *
+ * The trailing icon switches between a search (magnifying glass) and a
+ * clear (cancel) icon based on `displaySearchIcon`. This allows the parent
+ * to control two distinct actions from the same button position:
+ * - Search icon visible → clicking triggers `onSearchIconClick` (apply search)
+ * - Clear icon visible  → clicking triggers `onClearIconClick` (reset search)
+ *
+ * The button is disabled until `enableSearchOption` is true, preventing
+ * accidental searches on empty or too-short input values.
+ */
 type SearchBoxProps = {
     attributes: React.InputHTMLAttributes<HTMLInputElement>;
     enableSearchOption: boolean;

@@ -15,7 +15,7 @@ import {
     GetRepositoryResourcesResponse,
     GetOrCreateBountyLabelResponse,
     IssueDto
-} from "../models/github.model";
+} from "@devasign/shared/models/github.model";
 
 export class InstallationAPI {
     static async getInstallations(query?: QueryInstallationDto) {

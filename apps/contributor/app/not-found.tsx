@@ -6,7 +6,7 @@ import { ROUTES } from "@/app/utils/data";
 import { FiFilePlus } from "react-icons/fi";
 import ButtonPrimary from "@devasign/shared/components/ButtonPrimary";
 
-export default function Home() {
+export default function NotFound() {
     const router = useRouter();
 
     useEffect(() => {

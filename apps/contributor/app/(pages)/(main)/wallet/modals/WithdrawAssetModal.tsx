@@ -10,6 +10,20 @@ import { WalletAPI } from "@/app/services/wallet.service";
 import { toast } from "react-toastify";
 import Tooltip from "@devasign/shared/components/Tooltip";
 
+/**
+ * Modal for withdrawing USDC from the contributor's DeVAsign wallet
+ * to an external Stellar address.
+ *
+ * Key behaviours:
+ * - Client-side balance validation prevents submitting withdrawals that
+ *   exceed the current USDC balance (avoids unnecessary API round-trips).
+ * - The amount field uses MoneyInput which formats with commas; commas
+ *   are stripped before sending to the API.
+ * - After a successful withdrawal, the parent is notified to reload
+ *   both the transaction list and the Horizon balance stream.
+ * - The memo field is optional but critical for exchanges that require
+ *   a memo/tag to credit the correct account.
+ */
 const withdrawAssetSchema = object({
     amount: string().required("Required"),
     memo: string().optional(),
@@ -37,6 +51,7 @@ const WithdrawAssetModal = ({
         },
         validationSchema: withdrawAssetSchema,
         onSubmit: async (values) => {
+            // Client-side guard: prevent over-withdrawals before hitting the API
             const withdrawAmount = parseFloat(values.amount.replace(/,/g, ""));
             const balance = parseFloat(usdcBalance);
 
@@ -48,12 +63,12 @@ const WithdrawAssetModal = ({
             try {
                 const response = await WalletAPI.withdrawAsset({
                     ...values,
-                    amount: values.amount.replace(/,/g, "")
+                    amount: values.amount.replace(/,/g, "") // Strip formatting commas
                 });
 
                 handleApiSuccessResponse(response);
                 reloadTransactions();
-                manualBalanceCheck();
+                manualBalanceCheck(); // Force-refresh the Horizon balance
                 toggleModal();
             } catch (error) {
                 handleApiErrorResponse(

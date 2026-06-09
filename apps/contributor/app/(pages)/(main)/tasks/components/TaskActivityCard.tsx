@@ -1,5 +1,11 @@
 import { FaChevronRight } from "react-icons/fa6";
 
+/**
+ * Compact clickable card representing a single activity event on a task.
+ * Displays the GitHub issue number, activity title, and issue URL.
+ * Used inside the TaskOverviewSection updates panel to list task-related events.
+ */
+
 type TaskActivityCardProps = {
     issueNumber: number;
     activityTitle: string;
@@ -15,7 +21,7 @@ const TaskActivityCard = ({ issueNumber, activityTitle, issueUrl, onClick }: Tas
             className="w-full p-2.5 border border-primary-200 bg-dark-400 cursor-pointer flex items-center gap-[15px] hover:border-light-100"
         >
             <div className="py-2.5 px-[7px] text-body-tiny 
-                text-light-100 bg-[linear-gradient(130.86deg,_rgba(254,_137,_31,_0.175)_15.53%,_rgba(254,_137,_31,_0.075)_79.38%)]"
+                text-light-100 bg-[linear-gradient(130.86deg,rgba(254,137,31,0.175)_15.53%,rgba(254,137,31,0.075)_79.38%)]"
             >
                 #{issueNumber}
             </div>

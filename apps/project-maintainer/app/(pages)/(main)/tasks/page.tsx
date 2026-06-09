@@ -12,6 +12,21 @@ import { useCustomSearchParams } from "@devasign/shared/hooks";
 import { useUnauthenticatedUserCheck } from "@/lib/firebase";
 import Image from "next/image";
 
+/**
+ * Primary task management page for project maintainers.
+ *
+ * Layout: three-panel design —
+ *   1. Left sidebar:  Paginated, filterable task list (TaskListSection).
+ *   2. Middle panel:  Task detail with description and conversation tabs
+ *                     (TaskDetailSection). Only shown when a task is selected.
+ *   3. Right sidebar: Task overview metadata + activity feed with action
+ *                     modals (TaskOverviewSection).
+ *
+ * The active task is driven by the `taskId` URL search param. The context
+ * provides `refreshActiveTask` so child components (modals, conversation)
+ * can trigger a re-fetch after mutations without a full page reload.
+ */
+
 const Tasks = () => {
     useUnauthenticatedUserCheck();
     const { searchParams } = useCustomSearchParams();
@@ -19,6 +34,8 @@ const Tasks = () => {
     const { activeInstallation } = useInstallationStore();
     const [activeTask, setActiveTask] = useState<TaskDto | null>(null);
 
+    /** Re-fetches the active task from the API. Used by child components
+     *  (e.g. after approving a submission) to refresh without a full page reload. */
     const refreshActiveTask = useCallback(async () => {
         if (!taskId || !activeInstallation) {
             return;

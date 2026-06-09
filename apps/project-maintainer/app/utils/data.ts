@@ -1,5 +1,6 @@
 export const ROUTES = {
     ACCOUNT: "/authenticate/account",
+    EXTENSION_SUCCESS: "/authenticate/extension-success",
     SUBSCRIPTION_PLAN: "/authenticate/subscription-plan",
     ONBOARDING: "/onboarding",
     OVERVIEW: "/overview",
@@ -19,3 +20,22 @@ export const ROUTES = {
 export const FEATURE_GATES = {
     REQUIRE_KYC: "require_kyc"
 };
+
+/**
+ * Allowlist of supported IDE URL schemes for the extension auth redirect.
+ * Restricting to known schemes prevents arbitrary-scheme injection from the
+ * `extensionAuth` value stored in localStorage. Includes VS Code and its forks.
+ */
+export const ALLOWED_IDES = [
+    "vscode", // Visual Studio Code
+    "vscode-insiders", // VS Code Insiders
+    "code-oss", // VS Code Open Source
+    "vscodium", // VSCodium (open-source VS Code build)
+    "cursor", // Cursor
+    "windsurf", // Windsurf (Codeium)
+    "kiro", // Kiro
+    "antigravity-ide", // Google Antigravity
+    "trae", // Trae (ByteDance)
+    "positron", // Positron (Posit)
+    "pearai" // PearAI
+];

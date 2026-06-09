@@ -10,6 +10,22 @@ import { TaskAPI } from "@/app/services/task.service";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 
+/**
+ * Bounty editor modal — updates the USDC amount escrowed for a task.
+ *
+ * The bounty can only be edited for OPEN tasks with zero applications
+ * (enforced by the parent TaskOverviewSection). The new bounty value
+ * is sanitised (commas stripped) before being sent to the API.
+ *
+ * The submit button is disabled when the value hasn't changed or the
+ * input is empty, preventing no-op API calls. On success, the task list
+ * is refreshed via the `refresh` URL param.
+ *
+ * Note: The updated bounty will be reflected on the GitHub issue only
+ * after the user reloads the issue page, since the API updates the issue
+ * label asynchronously.
+ */
+
 type SetTaskBountyModalProps = {
     toggleModal: () => void;
 };

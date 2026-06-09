@@ -12,6 +12,15 @@ import { toast } from "react-toastify";
 import useUserStore from "@/app/state-management/useUserStore";
 import { TiMessages } from "react-icons/ti";
 
+/**
+ * Image preview for file attachments before they're uploaded.
+ *
+ * Uses `FileReader.readAsDataURL` instead of `URL.createObjectURL` to
+ * generate previews. This avoids CodeQL flagging DOM-extracted Blob URLs
+ * as an XSS vector (a known false positive). The data URL is additionally
+ * validated to start with `data:image/` before rendering.
+ */
+
 const AttachmentPreview = ({ file, onRemove }: { file: File; onRemove: () => void }) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -62,6 +71,21 @@ const AttachmentPreview = ({ file, onRemove }: { file: File; onRemove: () => voi
     );
 };
 
+/**
+ * Real-time conversation view between the project maintainer and
+ * the assigned contributor.
+ *
+ * Message sending flow:
+ *   1. Uploads all attachments in parallel via `Promise.all`.
+ *   2. Creates the message document in Firestore with the uploaded URLs.
+ *   3. Optimistically appends to local state for instant feedback.
+ *
+ * The message input is disabled on completed tasks. Date separators
+ * (sticky headers) are driven by `orderedDateLabels` from the hook.
+ * The `margin` prop on each MessageBlock creates visual grouping:
+ * same-sender messages get tight spacing (2.5), different-sender
+ * messages get wide spacing (30px).
+ */
 const ConversationView = () => {
     const { currentUser } = useUserStore();
     const textareaRef = useRef<HTMLTextAreaElement>(null);

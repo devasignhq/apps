@@ -1,6 +1,6 @@
 "use client";
-import { getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
-import { ROUTES } from "@/app/utils/data";
+import { auth, getCurrentUser, useUnauthenticatedUserCheck } from "@/lib/firebase";
+import { ALLOWED_IDES, ROUTES } from "@/app/utils/data";
 import { useAsyncEffect, useLockFn } from "ahooks";
 import { InstallationAPI } from "@/app/services/installation.service";
 import useInstallationStore from "@/app/state-management/useInstallationStore";
@@ -12,15 +12,28 @@ import { MdOutlineCancel } from "react-icons/md";
 import { handleApiErrorResponse, handleApiSuccessResponse } from "@/app/utils/helper";
 import { useCustomSearchParams } from "@devasign/shared/hooks";
 
+/**
+ * GitHub App installation callback page.
+ *
+ * After a maintainer installs (or modifies) the DeVAsign GitHub App,
+ * GitHub redirects here with `?installation_id=<id>` in the URL.
+ * This page:
+ *   1. Validates the user is authenticated (redirects to auth if not,
+ *      preserving the installation_id for post-login pickup).
+ *   2. Deduplicates — if the installation already exists in the local store,
+ *      skips the API call and redirects straight to tasks.
+ *   3. Saves the installation via the API. First-time installs route to
+ *      onboarding; subsequent installs go to the tasks dashboard.
+ *   4. On failure, shows a retry/reinstall prompt.
+ */
 type ReboundAction = "INSTALL" | "RETRY" | "";
 
 const Installation = () => {
-    const router = useUnauthenticatedUserCheck();;
+    const router = useUnauthenticatedUserCheck();
     const { searchParams } = useCustomSearchParams();
     const installationId = searchParams.get("installation_id");
     const [isProcessing, setIsProcessing] = useState(true);
     const [reboundAction, setReboundAction] = useState<ReboundAction>("");
-
     const {
         activeInstallation,
         installationList,
@@ -28,6 +41,43 @@ const Installation = () => {
         setInstallationList
     } = useInstallationStore();
 
+    /**
+     * Handles the redirect to the extension after installation.
+     */
+    const handleExtensionRedirect = async () => {
+        const extensionAuthStr = localStorage.getItem("extensionAuth");
+        if (!extensionAuthStr) {
+            return false;
+        }
+
+        try {
+            const extAuth = JSON.parse(extensionAuthStr);
+
+            // Allowlist of supported IDE URL schemes to prevent arbitrary-scheme injection.
+            if (typeof extAuth?.ide !== "string" || !ALLOWED_IDES.includes(extAuth.ide)) {
+                localStorage.removeItem("extensionAuth");
+                return false;
+            }
+
+            const refreshToken = auth.currentUser?.refreshToken;
+            if (!refreshToken) {
+                return false;
+            }
+
+            const ideLink = `${extAuth.ide}://devasign.devasign/auth?refreshToken=${encodeURIComponent(refreshToken)}`;
+
+            localStorage.removeItem("extensionAuth");
+            localStorage.setItem("ideLink", ideLink);
+            router.push(ROUTES.EXTENSION_SUCCESS);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    /**
+     * Save installation data to database
+     */
     const saveInstallation = async () => {
         setIsProcessing(true);
         const user = await getCurrentUser();
@@ -44,11 +94,17 @@ const Installation = () => {
             return;
         }
 
-        // Check if installationId already exists in installationList
+        // Dedup: skip the API call if this installation is already known
         const existingInstallation = installationList.find((inst) => inst.id === installationId);
         if (existingInstallation) {
             setActiveInstallation(existingInstallation);
             toast.info("Installation already exists.");
+            
+            // If the user arrived from the extension, construct a deep link to return them
+            // to their IDE with their updated authentication and installation data.
+            const redirected = await handleExtensionRedirect();
+            if (redirected) return;
+
             router.push(ROUTES.TASKS);
             return;
         }
@@ -56,12 +112,18 @@ const Installation = () => {
         try {
             const response = await InstallationAPI.createInstallation({ installationId });
             
+            // First installation ever → route to onboarding; otherwise → tasks
             const noCurrentInstallations = !activeInstallation && installationList.length === 0;
 
             setReboundAction("");
             setActiveInstallation(response.data);
             setInstallationList([...installationList, response.data]);
             handleApiSuccessResponse(response);
+
+            // If the user arrived from the extension, construct a deep link to return them
+            // to their IDE with their updated authentication and installation data.
+            const redirected = await handleExtensionRedirect();
+            if (redirected) return;
 
             if (noCurrentInstallations) {
                 router.push(ROUTES.ONBOARDING);
@@ -82,7 +144,7 @@ const Installation = () => {
     useAsyncEffect(useLockFn(() => saveInstallation()), [router, installationId]);
 
     return (isProcessing || reboundAction === "") ? (
-        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+        <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
             <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                 <TbProgress className="text-[44px] text-primary-400 mx-auto rotate-loading-slower" />
                 <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Saving Installation</h2>
@@ -92,7 +154,7 @@ const Installation = () => {
             </div>
         </div>
     ) : (
-        <div className="fixed inset-0 z-[100] bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
+        <div className="fixed inset-0 z-100 bg-[#0000004D] grid place-content-center backdrop-blur-[14px] pointer-events-none">
             <div className="w-[820px] max-h-[92dvh] p-10 popup-modal relative bg-dark-500 pointer-events-auto">
                 <MdOutlineCancel className="text-[44px] text-indicator-500 mx-auto" />
                 <h2 className="text-headline-medium text-light-100 my-2.5 text-center">Process Failed</h2>

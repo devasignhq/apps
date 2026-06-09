@@ -1,5 +1,8 @@
 "use client";
 
+/** Selectable repository button in the CreateTaskModal's left sidebar.
+ *  Highlights with an accent bottom border when active. */
+
 type RepoMenuCardProps = {
     repoName: string;
     repoUrl: string;

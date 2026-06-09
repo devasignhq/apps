@@ -11,6 +11,21 @@ import { FiArrowUpRight } from "react-icons/fi";
 import { ActiveTaskContext } from "../contexts/ActiveTaskContext";
 import { toast } from "react-toastify";
 
+/**
+ * Final approval step for a contributor's task submission.
+ *
+ * Shows submission details (PR link, attachment, contributor, timestamp)
+ * and a "Pay Contributor" button. Clicking it calls `TaskAPI.validateCompletion`,
+ * which triggers the on-chain bounty payout to the contributor's wallet.
+ *
+ * There are two paths to pay the bounty:
+ *   1. Click "Pay Contributor" here (manual approval).
+ *   2. Merge the PR on GitHub (webhook-driven automatic payout).
+ * Either path completes the task, so the button is only shown when the
+ * task status is MARKED_AS_COMPLETED (i.e. the contributor submitted but
+ * it hasn't been approved yet).
+ */
+
 type ApproveSubmissionModalProps = {
     taskActivity: TaskActivity;
     toggleModal: () => void;
